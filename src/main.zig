@@ -1,5 +1,6 @@
 const std = @import("std");
 const utils = @import("utils.zig");
+const day1 = @import("days/day1.zig");
 
 pub fn main() !void {
     var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -8,6 +9,8 @@ pub fn main() !void {
 
     const args = try utils.parseArgs(arena);
 
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("Running day {d} part {d} with input file: \"{s}\"", .{ args.day, args.part, args.input_filename });
+    const input = try std.fs.cwd().readFileAlloc(arena, args.input_filename, 1024 * 1024);
+    const output = try day1.part1(input);
+
+    std.debug.print("Output: {d}", .{output});
 }
