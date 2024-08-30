@@ -11,13 +11,13 @@ pub fn parseArgs(arena: std.mem.Allocator) !Args {
     defer std.process.argsFree(arena, args);
 
     if (args.len != 4) {
-        std.debug.print("Usage: {s} <input_filename> <day> <part>\n", .{args[0]});
+        std.debug.print("Usage: {s} <day> <part> <input_filename>\n", .{args[0]});
         return error.InvalidArguments;
     }
 
-    const input_filename = try arena.dupe(u8, args[1]);
-    const day = try std.fmt.parseInt(u8, args[2], 10);
-    const part = try std.fmt.parseInt(u8, args[3], 10);
+    const day = try std.fmt.parseInt(u8, args[1], 10);
+    const part = try std.fmt.parseInt(u8, args[2], 10);
+    const input_filename = try arena.dupe(u8, args[3]);
 
     return Args{
         .input_filename = input_filename,
