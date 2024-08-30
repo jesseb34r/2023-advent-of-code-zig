@@ -1,4 +1,5 @@
 const std = @import("std");
+const utils = @import("../utils.zig");
 
 pub fn part1(input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
     var sum: u64 = 0;
@@ -93,9 +94,7 @@ test "part1" {
         \\treb7uchet
     ;
 
-    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    const result = try part1(&input_lines);
-    try std.testing.expectEqual(@as(u64, 142), result);
+    try utils.testPart(input, part1, 142);
 }
 
 test "part2" {
@@ -109,7 +108,5 @@ test "part2" {
         \\7pqrstsixteen
     ;
 
-    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    const result = try part2(&input_lines);
-    try std.testing.expectEqual(@as(u64, 281), result);
+    try utils.testPart(input, part2, 281);
 }

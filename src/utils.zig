@@ -25,3 +25,13 @@ pub fn parseArgs(arena: std.mem.Allocator) !Args {
         .part = part,
     };
 }
+
+pub fn testPart(
+    input: []const u8,
+    part_fn: fn (input_lines: *std.mem.TokenIterator(u8, .sequence)) anyerror!u64,
+    expected_result: u64,
+) !void {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    const result = try part_fn(&input_lines);
+    try std.testing.expectEqual(expected_result, result);
+}
