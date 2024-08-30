@@ -1,11 +1,9 @@
 const std = @import("std");
 
-pub fn part1(input: []const u8) !u64 {
-    var lines = std.mem.tokenizeSequence(u8, input, "\n");
-
+pub fn part1(input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
     var sum: u64 = 0;
 
-    while (lines.next()) |line| {
+    while (input_lines.*.next()) |line| {
         var parsed_digits: [2]u8 = undefined;
 
         for (line) |c| {

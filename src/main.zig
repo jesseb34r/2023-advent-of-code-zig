@@ -10,7 +10,8 @@ pub fn main() !void {
     const args = try utils.parseArgs(arena);
 
     const input = try std.fs.cwd().readFileAlloc(arena, args.input_filename, 1024 * 1024);
-    const output = try day1.part1(input);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    const output = try day1.part1(&input_lines);
 
     std.debug.print("Output: {d}", .{output});
 }
