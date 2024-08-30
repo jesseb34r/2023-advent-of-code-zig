@@ -31,11 +31,11 @@ pub fn testPart(
     part_fn: fn (allocator: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) anyerror!u64,
     expected_result: u64,
 ) !void {
-    var allocator_file = std.heap.allocatorAllocator.init(std.heap.page_allocator);
-    defer allocator_file.deinit();
-    const allocator = allocator_file.allocator();
+    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena_file.deinit();
+    const arena = arena_file.allocator();
 
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    const result = try part_fn(allocator, &input_lines);
+    const result = try part_fn(arena, &input_lines);
     try std.testing.expectEqual(expected_result, result);
 }
