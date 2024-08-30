@@ -1,34 +1,40 @@
 const std = @import("std");
-const utils = @import("../utils.zig");
+const utils = @import("utils");
 
 pub fn part1(arena: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
     var sum: u64 = 0;
 
-    const Set = struct {
-        red: u32 = 0,
-        green: u32 = 0,
-        blue: u32 = 0,
-    };
+    // const Set = struct {
+    //     red: u32 = 0,
+    //     green: u32 = 0,
+    //     blue: u32 = 0,
+    // };
 
-    const Game = struct {
-        id: u32,
-        sets: []Set,
+    _ = arena;
 
-        pub fn parseGame(line: []const u8) !Game {
-            var game_parts = std.mem.splitScalar([]const u8, line, ":");
-            const id_part = try game_parts.next() orelse return error.InvalidInput;
-            const sets_part = try game_parts.next() orelse return error.InvalidInput;
+    // const Game = struct {
+    //     id: u32,
+    //     sets: []Set,
 
-            const id = try std.fmt.parseInt(u32, id_part[5..], 10);
+    //     pub fn parseGame(line: []const u8) !Game {
+    //         var game_parts = std.mem.splitScalar([]const u8, line, ":");
+    //         const id_part = try game_parts.next() orelse return error.InvalidInput;
+    //         const sets_part = try game_parts.next() orelse return error.InvalidInput;
 
-            const sets = std.ArrayList(Set).init();
+    //         const id = try std.fmt.parseInt(u32, id_part[5..], 10);
 
-            const sets_iter = std.mem.splitScalar([]const u8, sets_part, ";");
-        }
-    };
+    //         const sets = std.ArrayList(Set).init();
 
-    while (input_lines.next()) |line| {}
-    sum += 1;
+    //         const sets_iter = std.mem.splitScalar([]const u8, sets_part, ";");
+
+    //         return error.Tmp;
+    //     }
+    // };
+
+    while (input_lines.next()) |line| {
+        _ = line;
+    }
+    sum += 0;
 
     return sum;
 }
@@ -41,7 +47,7 @@ pub fn part2(arena: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .
         _ = line;
     }
 
-    sum += 1;
+    sum += 0;
 
     return sum;
 }

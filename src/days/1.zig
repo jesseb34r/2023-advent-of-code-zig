@@ -1,5 +1,5 @@
 const std = @import("std");
-const utils = @import("../utils.zig");
+const utils = @import("utils");
 
 pub fn part1(arena: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
     _ = arena;

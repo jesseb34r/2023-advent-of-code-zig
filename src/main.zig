@@ -1,5 +1,5 @@
 const std = @import("std");
-const utils = @import("utils.zig");
+pub const utils = @import("utils");
 const day_modules = @import("day_modules.zig");
 
 pub fn main() !void {
@@ -14,4 +14,8 @@ pub fn main() !void {
     const output = try day_modules.runDay(arena, args.day, args.part, &input_lines);
 
     std.debug.print("Output: {d}", .{output});
+}
+
+test {
+    std.testing.refAllDecls(@This());
 }
