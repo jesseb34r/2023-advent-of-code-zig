@@ -1,19 +1,25 @@
 const std = @import("std");
 const utils = @import("../utils.zig");
 
-pub fn part1(input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+pub fn part1(arena: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+    _ = arena;
     var sum: u64 = 0;
 
-    _ = input_lines;
+    while (input_lines.next()) |line| {
+        _ = line;
+    }
     sum += 1;
 
     return sum;
 }
 
-pub fn part2(input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+pub fn part2(arena: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+    _ = arena;
     var sum: u64 = 0;
 
-    _ = input_lines;
+    while (input_lines.next()) |line| {
+        _ = line;
+    }
     sum += 1;
 
     return sum;

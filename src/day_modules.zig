@@ -53,33 +53,33 @@ const DayModules = struct {
     @"25": day25,
 };
 
-pub fn runDay(day: u8, part: u8, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+pub fn runDay(arena: std.mem.Allocator, day: u8, part: u8, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
     return switch (day) {
-        1 => runPart(day1, part, input_lines),
-        2 => runPart(day2, part, input_lines),
-        3 => runPart(day3, part, input_lines),
-        4 => runPart(day4, part, input_lines),
-        5 => runPart(day5, part, input_lines),
-        6 => runPart(day6, part, input_lines),
-        7 => runPart(day7, part, input_lines),
-        8 => runPart(day8, part, input_lines),
-        9 => runPart(day9, part, input_lines),
-        10 => runPart(day10, part, input_lines),
-        11 => runPart(day11, part, input_lines),
-        12 => runPart(day12, part, input_lines),
-        13 => runPart(day13, part, input_lines),
-        14 => runPart(day14, part, input_lines),
-        15 => runPart(day15, part, input_lines),
-        16 => runPart(day16, part, input_lines),
-        17 => runPart(day17, part, input_lines),
-        18 => runPart(day18, part, input_lines),
-        19 => runPart(day19, part, input_lines),
-        20 => runPart(day20, part, input_lines),
-        21 => runPart(day21, part, input_lines),
-        22 => runPart(day22, part, input_lines),
-        23 => runPart(day23, part, input_lines),
-        24 => runPart(day24, part, input_lines),
-        25 => runPart(day25, part, input_lines),
+        1 => runPart(arena, day1, part, input_lines),
+        2 => runPart(arena, day2, part, input_lines),
+        3 => runPart(arena, day3, part, input_lines),
+        4 => runPart(arena, day4, part, input_lines),
+        5 => runPart(arena, day5, part, input_lines),
+        6 => runPart(arena, day6, part, input_lines),
+        7 => runPart(arena, day7, part, input_lines),
+        8 => runPart(arena, day8, part, input_lines),
+        9 => runPart(arena, day9, part, input_lines),
+        10 => runPart(arena, day10, part, input_lines),
+        11 => runPart(arena, day11, part, input_lines),
+        12 => runPart(arena, day12, part, input_lines),
+        13 => runPart(arena, day13, part, input_lines),
+        14 => runPart(arena, day14, part, input_lines),
+        15 => runPart(arena, day15, part, input_lines),
+        16 => runPart(arena, day16, part, input_lines),
+        17 => runPart(arena, day17, part, input_lines),
+        18 => runPart(arena, day18, part, input_lines),
+        19 => runPart(arena, day19, part, input_lines),
+        20 => runPart(arena, day20, part, input_lines),
+        21 => runPart(arena, day21, part, input_lines),
+        22 => runPart(arena, day22, part, input_lines),
+        23 => runPart(arena, day23, part, input_lines),
+        24 => runPart(arena, day24, part, input_lines),
+        25 => runPart(arena, day25, part, input_lines),
         else => {
             std.debug.print("Invalid day number. Must be between 1 and 25.\n", .{});
             return error.InvalidDay;
@@ -87,10 +87,10 @@ pub fn runDay(day: u8, part: u8, input_lines: *std.mem.TokenIterator(u8, .sequen
     };
 }
 
-fn runPart(day_module: anytype, part: u8, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+fn runPart(arena: std.mem.Allocator, day_module: anytype, part: u8, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
     return switch (part) {
-        1 => try day_module.part1(input_lines),
-        2 => try day_module.part2(input_lines),
+        1 => try day_module.part1(arena, input_lines),
+        2 => try day_module.part2(arena, input_lines),
         else => {
             std.debug.print("Invalid part number. Must be 1 or 2.\n", .{});
             return error.InvalidPart;

@@ -1,7 +1,8 @@
 const std = @import("std");
 const utils = @import("../utils.zig");
 
-pub fn part1(input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+pub fn part1(arena: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+    _ = arena;
     var sum: u64 = 0;
 
     while (input_lines.*.next()) |line| {
@@ -28,7 +29,8 @@ pub fn part1(input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
     return sum;
 }
 
-pub fn part2(input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+pub fn part2(arena: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+    _ = arena;
     var sum: u64 = 0;
 
     const digit_map = [_]struct { name: []const u8, value: u8 }{
