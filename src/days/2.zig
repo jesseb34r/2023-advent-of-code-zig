@@ -50,6 +50,15 @@ const Game = struct {
         };
     }
 
+    pub fn isPossible(self: @This(), bag: Set) bool {
+        for (self.sets) |set| {
+            if (set.red > bag.red or set.green > bag.green or set.blue > bag.blue) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     pub fn eql(self: @This(), other: @This()) bool {
         if (self.id != other.id) return false;
         if (self.sets.len != other.sets.len) return false;
@@ -108,6 +117,30 @@ test "parseGame" {
 
     const parsed_game = try Game.parseGame(arena, input);
     try std.testing.expect(parsed_game.eql(expected_result));
+}
+
+test "possibleGame" {
+    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena_file.deinit();
+    const arena = arena_file.allocator();
+
+    const game = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
+    const parsed_game = try Game.parseGame(arena, game);
+    const bag = Set{ .red = 4, .green = 2, .blue = 6 };
+
+    try std.testing.expect(parsed_game.isPossible(bag));
+}
+
+test "impossibleGame" {
+    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena_file.deinit();
+    const arena = arena_file.allocator();
+
+    const game = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
+    const parsed_game = try Game.parseGame(arena, game);
+    const bag = Set{ .red = 0, .green = 0, .blue = 0 };
+
+    try std.testing.expect(!parsed_game.isPossible(bag));
 }
 
 test "part1" {
