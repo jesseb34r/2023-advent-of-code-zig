@@ -34,19 +34,30 @@ const SchematicLine = struct {
                 if (start_index == null) {
                     start_index = i;
                 }
-            } else if (start_index != null) {
-                try numbers.append(NumberWithRange{
-                    .value = try std.fmt.parseInt(u64, try current_digits.toOwnedSlice(), 10),
-                    .start_index = start_index.?,
-                    .end_index = i - 1,
-                });
-                start_index = null;
-                current_digits.clearAndFree();
-            }
+            } else {
+                if (start_index != null) {
+                    try numbers.append(NumberWithRange{
+                        .value = try std.fmt.parseInt(u64, try current_digits.toOwnedSlice(), 10),
+                        .start_index = start_index.?,
+                        .end_index = i - 1,
+                    });
+                    start_index = null;
+                    current_digits.clearAndFree();
+                }
 
-            if (std.mem.indexOfScalar(u8, &SYMBOLS, c) != null) {
-                try symbols.append(SymbolWithRange{ .symbol = c, .index = i });
+                if (std.mem.indexOfScalar(u8, &SYMBOLS, c) != null) {
+                    try symbols.append(SymbolWithRange{ .symbol = c, .index = i });
+                }
             }
+        }
+
+        // Handle number at the end of the line
+        if (start_index != null) {
+            try numbers.append(NumberWithRange{
+                .value = try std.fmt.parseInt(u64, try current_digits.toOwnedSlice(), 10),
+                .start_index = start_index.?,
+                .end_index = line.len - 1,
+            });
         }
 
         return @This(){
@@ -85,12 +96,38 @@ const Schematic = struct {
         allocator: std.mem.Allocator,
         input_lines: *std.mem.TokenIterator(u8, .sequence),
     ) !@This() {
-        _ = allocator;
-        _ = input_lines;
+        var parsed_lines = std.ArrayList(SchematicLine).init(allocator);
+        defer parsed_lines.deinit();
+
+        while (input_lines.next()) |line| {
+            try parsed_lines.append(try SchematicLine.parseLine(allocator, line));
+        }
+
+        return Schematic{ .lines = try parsed_lines.toOwnedSlice() };
     }
 
     pub fn getPartNumberSum(self: @This()) u64 {
-        _ = self;
+        var sum: u64 = 0;
+
+        for (0..self.lines.len) |i| {
+            numbers_loop: for (self.lines[i].numbers) |number| {
+                const row_start = if (i > 0) i - 1 else i;
+                const row_end = if (i < self.lines.len - 1) i + 1 else i;
+
+                for (row_start..row_end + 1) |row| {
+                    for (self.lines[row].symbols) |symbol| {
+                        if (symbol.index >= number.start_index -| 1 and
+                            symbol.index <= number.end_index + 1)
+                        {
+                            sum += number.value;
+                            continue :numbers_loop;
+                        }
+                    }
+                }
+            }
+        }
+
+        return sum;
     }
 };
 
@@ -98,15 +135,8 @@ pub fn part1(
     allocator: std.mem.Allocator,
     input_lines: *std.mem.TokenIterator(u8, .sequence),
 ) !u64 {
-    _ = allocator;
-    var sum: u64 = 0;
-
-    while (input_lines.next()) |line| {
-        _ = line;
-    }
-    sum += 0;
-
-    return sum;
+    const schematic = try Schematic.parseSchematic(allocator, input_lines);
+    return schematic.getPartNumberSum();
 }
 
 pub fn part2(
