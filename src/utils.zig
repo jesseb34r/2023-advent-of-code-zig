@@ -28,7 +28,10 @@ pub fn parseArgs(allocator: std.mem.Allocator) !Args {
 
 pub fn testPart(
     input: []const u8,
-    part_fn: fn (allocator: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) anyerror!u64,
+    part_fn: fn (
+        allocator: std.mem.Allocator,
+        input_lines: *std.mem.TokenIterator(u8, .sequence),
+    ) anyerror!u64,
     expected_result: u64,
 ) !void {
     var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);

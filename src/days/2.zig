@@ -71,26 +71,33 @@ const Game = struct {
     }
 };
 
-pub fn part1(allocator: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+pub fn part1(
+    allocator: std.mem.Allocator,
+    input_lines: *std.mem.TokenIterator(u8, .sequence),
+) !u64 {
     var sum: u64 = 0;
 
-    _ = allocator;
+    const bag = Set{.red = 12, .green = 13, .blue = 14};
 
     while (input_lines.next()) |line| {
-        _ = line;
+        const game = try Game.parseGame(allocator, line);
+        if (game.isPossible) {
+            sum += game.id;
+        }
     }
-    sum += 0;
 
-    return 8;
+    return sum;
 }
 
-pub fn part2(allocator: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
-    _ = allocator;
+pub fn part2(
+    allocator: std.mem.Allocator,
+    input_lines: *std.mem.TokenIterator(u8, .sequence),
+) !u64 {
     var sum: u64 = 0;
 
-    while (input_lines.next()) |line| {
-        _ = line;
-    }
+    _ = allocator;
+
+    while (input_lines.next()) |line| {_ = line}
 
     sum += 0;
 
