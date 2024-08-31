@@ -5,6 +5,12 @@ const Set = struct {
     red: u32 = 0,
     green: u32 = 0,
     blue: u32 = 0,
+
+    pub fn eql(self: @This(), other: @This()) bool {
+        return self.red == other.red and
+            self.green == other.green and
+            self.blue == other.blue;
+    }
 };
 
 const Game = struct {
@@ -59,6 +65,16 @@ const Game = struct {
         return true;
     }
 
+    pub fn minimalBag(self: @This()) Set {
+        var bag = Set{};
+        for (self.sets) |set| {
+            bag.red = @max(bag.red, set.red);
+            bag.green = @max(bag.green, set.green);
+            bag.blue = @max(bag.blue, set.blue);
+        }
+        return bag;
+    }
+
     pub fn eql(self: @This(), other: @This()) bool {
         if (self.id != other.id) return false;
         if (self.sets.len != other.sets.len) return false;
@@ -106,7 +122,7 @@ pub fn part2(
     return sum;
 }
 
-test "parseGame" {
+test "parse game" {
     var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena_file.deinit();
     const arena = arena_file.allocator();
@@ -114,7 +130,6 @@ test "parseGame" {
     const input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
 
     var expected_sets = std.ArrayList(Set).init(arena);
-
     try expected_sets.append(Set{ .red = 4, .green = 0, .blue = 3 });
     try expected_sets.append(Set{ .red = 1, .green = 2, .blue = 6 });
     try expected_sets.append(Set{ .red = 0, .green = 2, .blue = 0 });
@@ -128,7 +143,7 @@ test "parseGame" {
     try std.testing.expect(parsed_game.eql(expected_result));
 }
 
-test "possibleGame" {
+test "possible game" {
     var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena_file.deinit();
     const arena = arena_file.allocator();
@@ -140,7 +155,7 @@ test "possibleGame" {
     try std.testing.expect(parsed_game.isPossible(bag));
 }
 
-test "impossibleGame" {
+test "impossible game" {
     var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena_file.deinit();
     const arena = arena_file.allocator();
@@ -150,6 +165,21 @@ test "impossibleGame" {
     const bag = Set{ .red = 0, .green = 0, .blue = 0 };
 
     try std.testing.expect(!parsed_game.isPossible(bag));
+}
+
+test "minimal bag" {
+    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena_file.deinit();
+    const arena = arena_file.allocator();
+
+    var sets = std.ArrayList(Set).init(arena);
+    try sets.append(Set{ .red = 4, .green = 0, .blue = 3 });
+    try sets.append(Set{ .red = 1, .green = 2, .blue = 6 });
+    try sets.append(Set{ .red = 0, .green = 2, .blue = 0 });
+    const game = Game{ .id = 1, .sets = try sets.toOwnedSlice() };
+
+    const expected_minimal_bag = Set{ .red = 4, .green = 2, .blue = 6 };
+    try std.testing.expect(game.minimalBag().eql(expected_minimal_bag));
 }
 
 test "part1" {
@@ -166,11 +196,12 @@ test "part1" {
 
 test "part2" {
     const input =
-        \\
-        \\
-        \\
-        \\
+        \\Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
+        \\Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
+        \\Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
+        \\Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
+        \\Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
     ;
-    const expected_result = 0;
+    const expected_result = 2286;
     try utils.testPart(input, part2, expected_result);
 }
