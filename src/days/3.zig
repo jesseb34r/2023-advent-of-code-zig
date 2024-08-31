@@ -129,6 +129,52 @@ const Schematic = struct {
 
         return sum;
     }
+
+    pub fn getGearPowerSum(self: @This()) u64 {
+        var sum: u64 = 0;
+
+        for (0..self.lines.len) |i| {
+            symbols_loop: for (self.lines[i].symbols) |symbol| {
+                if (symbol.symbol != '*') continue;
+
+                var gear = struct {
+                    first: u64,
+                    second: u64,
+                }{
+                    .first = 0,
+                    .second = 0,
+                };
+
+                const row_start = if (i > 0) i - 1 else i;
+                const row_end = if (i < self.lines.len - 1) i + 1 else i;
+
+                for (row_start..row_end + 1) |row| {
+                    for (self.lines[row].numbers) |number| {
+                        if (symbol.index >= number.start_index -| 1 and
+                            symbol.index <= number.end_index + 1)
+                        {
+                            if (gear.first == 0) {
+                                gear.first = number.value;
+                                continue;
+                            } else if (gear.second == 0) {
+                                gear.second = number.value;
+                                continue;
+                            } else {
+                                sum += gear.first * gear.second;
+                                gear.first = 0;
+                                gear.second = 0;
+                                continue :symbols_loop;
+                            }
+                        }
+                    }
+                }
+
+                if (gear.second != 0) sum += gear.first * gear.second;
+            }
+        }
+
+        return sum;
+    }
 };
 
 pub fn part1(
@@ -143,15 +189,8 @@ pub fn part2(
     allocator: std.mem.Allocator,
     input_lines: *std.mem.TokenIterator(u8, .sequence),
 ) !u64 {
-    _ = allocator;
-    var sum: u64 = 0;
-
-    while (input_lines.next()) |line| {
-        _ = line;
-    }
-    sum += 0;
-
-    return sum;
+    const schematic = try Schematic.parseSchematic(allocator, input_lines);
+    return schematic.getGearPowerSum();
 }
 
 test "parse schematic line" {
@@ -198,11 +237,17 @@ test "part1" {
 
 test "part2" {
     const input =
-        \\
-        \\
-        \\
-        \\
+        \\467..114..
+        \\...*......
+        \\..35..633.
+        \\......#...
+        \\617*......
+        \\.....+.58.
+        \\..592.....
+        \\......755.
+        \\...$.*....
+        \\.664.598..
     ;
-    const expected_result = 0;
+    const expected_result = 467835;
     try utils.testPart(input, part2, expected_result);
 }
