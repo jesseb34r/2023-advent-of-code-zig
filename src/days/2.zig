@@ -6,6 +6,10 @@ const Set = struct {
     green: u32 = 0,
     blue: u32 = 0,
 
+    pub fn power(self: @This()) u64 {
+        return self.red * self.green * self.blue;
+    }
+
     pub fn eql(self: @This(), other: @This()) bool {
         return self.red == other.red and
             self.green == other.green and
@@ -111,13 +115,10 @@ pub fn part2(
 ) !u64 {
     var sum: u64 = 0;
 
-    _ = allocator;
-
     while (input_lines.next()) |line| {
-        _ = line;
+        const game = try Game.parseGame(allocator, line);
+        sum += game.minimalBag().power();
     }
-
-    sum += 0;
 
     return sum;
 }
