@@ -294,16 +294,16 @@ test "map range" {
         result_2c[0].length == 10);
 }
 
-test "part1" {
-    const input =
-        \\
-        \\
-        \\
-        \\
-    ;
-    const expected_result = 0;
-    try utils.testPart(input, part1, expected_result);
-}
+// test "part1" {
+//     const input =
+//         \\
+//         \\
+//         \\
+//         \\
+//     ;
+//     const expected_result = 0;
+//     try utils.testPart(input, part1, expected_result);
+// }
 
 test "part2" {
     const input =
