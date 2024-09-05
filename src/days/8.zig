@@ -55,7 +55,6 @@ pub fn part1(
     input_lines: *std.mem.TokenIterator(u8, .sequence),
 ) !u64 {
     const directions = input_lines.next().?;
-    // _ = input_lines.next().?;
 
     var map_tree = MapTree.init(allocator);
     defer map_tree.deinit();
@@ -106,15 +105,61 @@ pub fn part2(
     allocator: std.mem.Allocator,
     input_lines: *std.mem.TokenIterator(u8, .sequence),
 ) !u64 {
-    _ = allocator;
-    var sum: u64 = 0;
+    const directions = input_lines.next().?;
+    // _ = input_lines.next().?;
+
+    var map_tree = MapTree.init(allocator);
+    defer map_tree.deinit();
+
+    var starting_nodes = std.ArrayList(*MapNode).init(allocator);
+    var node_codes = std.ArrayList([3][3]u8).init(allocator);
 
     while (input_lines.next()) |line| {
-        _ = line;
-    }
-    sum += 0;
+        var node_parts = std.mem.splitSequence(u8, line, " = ");
+        const code_str = node_parts.next().?;
+        const children_str = node_parts.next().?;
 
-    return sum;
+        if (code_str.len != 3) return error.InvalidNodeCode;
+        try map_tree.addNode(code_str[0..3].*);
+
+        var children_parts = std.mem.splitSequence(u8, std.mem.trim(u8, children_str, "()"), ", ");
+        const left = children_parts.next().?;
+        const right = children_parts.next().?;
+
+        if (left.len != 3 or right.len != 3) return error.InvalidChildCode;
+        try node_codes.append(.{ code_str[0..3].*, left[0..3].*, right[0..3].* });
+    }
+
+    for (node_codes.items) |codes| {
+        if (codes[0][2] == 'A') try starting_nodes.append(map_tree.nodes.get(codes[0]).?);
+        try map_tree.setChildren(codes[0], codes[1], codes[2]);
+    }
+
+    var path_lengths = std.ArrayList(u64).init(allocator);
+
+    for (starting_nodes.items) |node| {
+        var path_length: u64 = 0;
+        path: while (true) {
+            for (directions) |d| {
+                path_length += 1;
+
+                node.* = switch (d) {
+                    'L' => node.left.?.*,
+                    'R' => node.right.?.*,
+                    else => unreachable,
+                };
+
+                if (node.code[2] == 'Z') break :path;
+            }
+        }
+        try path_lengths.append(path_length);
+    }
+
+    var lcm: u64 = path_lengths.items[0];
+    for (path_lengths.items[1..]) |length| {
+        lcm = utils.lcm(lcm, length);
+    }
+    return lcm;
 }
 
 test "part1" {
@@ -145,11 +190,17 @@ test "part1" {
 
 test "part2" {
     const input =
+        \\LR
         \\
-        \\
-        \\
-        \\
+        \\11A = (11B, XXX)
+        \\11B = (XXX, 11Z)
+        \\11Z = (11B, XXX)
+        \\22A = (22B, XXX)
+        \\22B = (22C, 22C)
+        \\22C = (22Z, 22Z)
+        \\22Z = (22B, 22B)
+        \\XXX = (XXX, XXX)
     ;
-    const expected_result = 0;
+    const expected_result = 6;
     try utils.testPart(input, part2, expected_result);
 }

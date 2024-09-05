@@ -42,3 +42,14 @@ pub fn testPart(
     const result = try part_fn(arena, &input_lines);
     try std.testing.expectEqual(expected_result, result);
 }
+
+pub fn lcm(a: u64, b: u64) u64 {
+    return (a * b) / gcd(a, b);
+}
+
+fn gcd(a: u64, b: u64) u64 {
+    if (b == 0) {
+        return a;
+    }
+    return gcd(b, a % b);
+}
