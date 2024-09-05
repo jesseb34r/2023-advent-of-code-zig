@@ -54,8 +54,8 @@ pub fn part1(
     allocator: std.mem.Allocator,
     input_lines: *std.mem.TokenIterator(u8, .sequence),
 ) !u64 {
-    // const directions = input_lines.next().?;
-    _ = input_lines.next().?;
+    const directions = input_lines.next().?;
+    // _ = input_lines.next().?;
 
     var map_tree = MapTree.init(allocator);
     defer map_tree.deinit();
@@ -82,7 +82,24 @@ pub fn part1(
         try map_tree.setChildren(codes[0], codes[1], codes[2]);
     }
 
-    return 0;
+    var current_node = map_tree.nodes.get("AAA".*).?;
+    var path_length: u64 = 0;
+
+    outer: while (true) {
+        for (directions) |d| {
+            path_length += 1;
+
+            current_node = switch (d) {
+                'L' => current_node.left.?,
+                'R' => current_node.right.?,
+                else => unreachable,
+            };
+
+            if (std.mem.eql(u8, &current_node.code, "ZZZ")) break :outer;
+        }
+    }
+
+    return path_length;
 }
 
 pub fn part2(
