@@ -53,3 +53,18 @@ fn gcd(a: u64, b: u64) u64 {
     }
     return gcd(b, a % b);
 }
+
+pub fn replaceChar(
+    allocator: std.mem.Allocator,
+    original: []const u8,
+    index: usize,
+    new_char: u8,
+) ![]const u8 {
+    var modified = try allocator.alloc(u8, original.len);
+    errdefer allocator.free(modified);
+
+    std.mem.copyForwards(u8, modified, original);
+    modified[index] = new_char;
+
+    return modified;
+}

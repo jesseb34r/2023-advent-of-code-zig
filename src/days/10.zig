@@ -44,6 +44,30 @@ const Map = struct {
         };
     }
 
+    pub fn findLoopPoints(self: *const Self) !std.ArrayList(Point) {
+        var loop_points = std.ArrayList(Point).init(self.allocator);
+        var visited = std.AutoHashMap(Point, void).init(self.allocator);
+        defer visited.deinit();
+
+        try loop_points.append(self.start);
+        try visited.put(self.start, {});
+
+        var current = self.start;
+        while (true) {
+            const connectedPoints = try self.findConnectedPoints(current);
+            for (connectedPoints) |next_point| {
+                if (!visited.contains(next_point)) {
+                    try visited.put(next_point, {});
+                    try loop_points.append(next_point);
+                    current = next_point;
+                    break;
+                }
+            } else break; // No unvisited connected points, loop complete
+        }
+
+        return loop_points;
+    }
+
     pub fn findFarthestDistance(self: *const Self) !u64 {
         var visited = std.AutoHashMap(Point, void).init(self.allocator);
         defer visited.deinit();
@@ -114,6 +138,23 @@ const Map = struct {
     }
 };
 
+fn shoelaceFormula(points: []const Point) i64 {
+    var area: i64 = 0;
+    const n = points.len;
+    for (0..n) |i| {
+        const j = (i + 1) % n;
+        area += @as(i64, @intCast(points[i].x)) * @as(i64, @intCast(points[j].y));
+        area -= @as(i64, @intCast(points[j].x)) * @as(i64, @intCast(points[i].y));
+    }
+    return @intCast(@abs(area) / 2);
+}
+
+fn calculateInteriorPoints(loop_points: []const Point) i64 {
+    const area = shoelaceFormula(loop_points);
+    const boundary_points = @as(i64, @intCast(loop_points.len));
+    return area - @divTrunc(boundary_points, 2) + 1;
+}
+
 pub fn part1(
     allocator: std.mem.Allocator,
     input_lines: *std.mem.TokenIterator(u8, .sequence),
@@ -126,15 +167,11 @@ pub fn part2(
     allocator: std.mem.Allocator,
     input_lines: *std.mem.TokenIterator(u8, .sequence),
 ) !u64 {
-    _ = allocator;
-    var sum: u64 = 0;
+    var map = try Map.init(allocator, input_lines);
+    const loop_points = try map.findLoopPoints();
+    defer loop_points.deinit();
 
-    while (input_lines.next()) |line| {
-        _ = line;
-    }
-    sum += 0;
-
-    return sum;
+    return @abs(calculateInteriorPoints(loop_points.items));
 }
 
 test "part1" {
@@ -159,13 +196,13 @@ test "part1" {
     try utils.testPart(input_2, part1, expected_result_2);
 }
 
-test "part2" {
-    const input =
-        \\
-        \\
-        \\
-        \\
-    ;
-    const expected_result = 0;
-    try utils.testPart(input, part2, expected_result);
-}
+// test "part2" {
+//     const input =
+//         \\
+//         \\
+//         \\
+//         \\
+//     ;
+//     const expected_result = 0;
+//     try utils.testPart(input, part2, expected_result);
+// }

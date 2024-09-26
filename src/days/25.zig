@@ -1,7 +1,10 @@
 const std = @import("std");
 const utils = @import("utils");
 
-pub fn part1(allocator: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence),) !u64 {
+pub fn part1(
+    allocator: std.mem.Allocator,
+    input_lines: *std.mem.TokenIterator(u8, .sequence),
+) !u64 {
     _ = allocator;
     var sum: u64 = 0;
 
@@ -13,7 +16,10 @@ pub fn part1(allocator: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u
     return sum;
 }
 
-pub fn part2(allocator: std.mem.Allocator, input_lines: *std.mem.TokenIterator(u8, .sequence),) !u64 {
+pub fn part2(
+    allocator: std.mem.Allocator,
+    input_lines: *std.mem.TokenIterator(u8, .sequence),
+) !u64 {
     _ = allocator;
     var sum: u64 = 0;
 
