@@ -202,8 +202,9 @@ const Hand = struct {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var hand_set = std.ArrayList(Hand).init(allocator);
 
     while (input_lines.next()) |line| {
@@ -221,8 +222,9 @@ pub fn part1(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var hand_set = std.ArrayList(Hand).init(allocator);
 
     while (input_lines.next()) |line| {

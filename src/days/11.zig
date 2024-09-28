@@ -36,9 +36,10 @@ const Map = struct {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
-    var map = try Map.init(allocator, input_lines);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    var map = try Map.init(allocator, &input_lines);
     const galaxy_points = try map.getGalaxyPoints();
 
     var empty_rows = try allocator.alloc(bool, map.map.len);
@@ -77,9 +78,10 @@ pub fn part1(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
-    var map = try Map.init(allocator, input_lines);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    var map = try Map.init(allocator, &input_lines);
     const galaxy_points = try map.getGalaxyPoints();
 
     var empty_rows = try allocator.alloc(bool, map.map.len);

@@ -3,12 +3,13 @@ const utils = @import("utils");
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
     _ = allocator;
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
 
-    while (input_lines.*.next()) |line| {
+    while (input_lines.next()) |line| {
         var parsed_digits: [2]u8 = undefined;
 
         for (line) |c| {
@@ -34,9 +35,10 @@ pub fn part1(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
     _ = allocator;
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
 
     const digit_map = [_]struct { name: []const u8, value: u8 }{
@@ -62,7 +64,7 @@ pub fn part2(
         }
     }.f;
 
-    while (input_lines.*.next()) |line| {
+    while (input_lines.next()) |line| {
         var parsed_digits: [2]u8 = undefined;
 
         for (0..line.len) |i| {

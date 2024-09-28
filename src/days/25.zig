@@ -3,8 +3,9 @@ const utils = @import("utils");
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     _ = allocator;
     var sum: u64 = 0;
 
@@ -18,8 +19,9 @@ pub fn part1(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     _ = allocator;
     var sum: u64 = 0;
 

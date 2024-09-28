@@ -10,8 +10,8 @@ pub fn main() !void {
     const args = try utils.parseArgs(arena);
 
     const input = try std.fs.cwd().readFileAlloc(arena, args.input_filename, 1024 * 1024);
-    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    const output = try day_modules.runDay(arena, args.day, args.part, &input_lines);
+
+    const output = try day_modules.runDay(arena, args.day, args.part, input);
 
     std.debug.print("Output: {d}", .{output});
 }

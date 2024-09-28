@@ -179,17 +179,19 @@ const Schematic = struct {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
-    const schematic = try Schematic.parseSchematic(allocator, input_lines);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    const schematic = try Schematic.parseSchematic(allocator, &input_lines);
     return schematic.getPartNumberSum();
 }
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
-    const schematic = try Schematic.parseSchematic(allocator, input_lines);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    const schematic = try Schematic.parseSchematic(allocator, &input_lines);
     return schematic.getGearPowerSum();
 }
 

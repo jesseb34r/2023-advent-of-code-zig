@@ -38,8 +38,9 @@ fn getNumValidCases(map: []const u8, keys: []usize) u64 {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
     while (input_lines.next()) |line| {
         var line_parts = std.mem.splitSequence(u8, line, " ");
@@ -131,8 +132,9 @@ fn memoizedGetNumValidCases(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
 
     var cache = std.AutoHashMap(CacheKey, u64).init(allocator);

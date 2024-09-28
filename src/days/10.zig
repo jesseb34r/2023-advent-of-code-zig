@@ -157,17 +157,19 @@ fn calculateInteriorPoints(loop_points: []const Point) i64 {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
-    const map = try Map.init(allocator, input_lines);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    const map = try Map.init(allocator, &input_lines);
     return map.findFarthestDistance();
 }
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
-    var map = try Map.init(allocator, input_lines);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    var map = try Map.init(allocator, &input_lines);
     const loop_points = try map.findLoopPoints();
     defer loop_points.deinit();
 

@@ -53,33 +53,33 @@ const DayModules = struct {
     @"25": day25,
 };
 
-pub fn runDay(allocator: std.mem.Allocator, day: u8, part: u8, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+pub fn runDay(allocator: std.mem.Allocator, day: u8, part: u8, input: []u8) !u64 {
     return switch (day) {
-        1 => runPart(allocator, day1, part, input_lines),
-        2 => runPart(allocator, day2, part, input_lines),
-        3 => runPart(allocator, day3, part, input_lines),
-        4 => runPart(allocator, day4, part, input_lines),
-        5 => runPart(allocator, day5, part, input_lines),
-        6 => runPart(allocator, day6, part, input_lines),
-        7 => runPart(allocator, day7, part, input_lines),
-        8 => runPart(allocator, day8, part, input_lines),
-        9 => runPart(allocator, day9, part, input_lines),
-        10 => runPart(allocator, day10, part, input_lines),
-        11 => runPart(allocator, day11, part, input_lines),
-        12 => runPart(allocator, day12, part, input_lines),
-        13 => runPart(allocator, day13, part, input_lines),
-        14 => runPart(allocator, day14, part, input_lines),
-        15 => runPart(allocator, day15, part, input_lines),
-        16 => runPart(allocator, day16, part, input_lines),
-        17 => runPart(allocator, day17, part, input_lines),
-        18 => runPart(allocator, day18, part, input_lines),
-        19 => runPart(allocator, day19, part, input_lines),
-        20 => runPart(allocator, day20, part, input_lines),
-        21 => runPart(allocator, day21, part, input_lines),
-        22 => runPart(allocator, day22, part, input_lines),
-        23 => runPart(allocator, day23, part, input_lines),
-        24 => runPart(allocator, day24, part, input_lines),
-        25 => runPart(allocator, day25, part, input_lines),
+        1 => runPart(allocator, day1, part, input),
+        2 => runPart(allocator, day2, part, input),
+        3 => runPart(allocator, day3, part, input),
+        4 => runPart(allocator, day4, part, input),
+        5 => runPart(allocator, day5, part, input),
+        6 => runPart(allocator, day6, part, input),
+        7 => runPart(allocator, day7, part, input),
+        8 => runPart(allocator, day8, part, input),
+        9 => runPart(allocator, day9, part, input),
+        10 => runPart(allocator, day10, part, input),
+        11 => runPart(allocator, day11, part, input),
+        12 => runPart(allocator, day12, part, input),
+        13 => runPart(allocator, day13, part, input),
+        14 => runPart(allocator, day14, part, input),
+        15 => runPart(allocator, day15, part, input),
+        16 => runPart(allocator, day16, part, input),
+        17 => runPart(allocator, day17, part, input),
+        18 => runPart(allocator, day18, part, input),
+        19 => runPart(allocator, day19, part, input),
+        20 => runPart(allocator, day20, part, input),
+        21 => runPart(allocator, day21, part, input),
+        22 => runPart(allocator, day22, part, input),
+        23 => runPart(allocator, day23, part, input),
+        24 => runPart(allocator, day24, part, input),
+        25 => runPart(allocator, day25, part, input),
         else => {
             std.debug.print("Invalid day number. Must be between 1 and 25.\n", .{});
             return error.InvalidDay;
@@ -87,10 +87,10 @@ pub fn runDay(allocator: std.mem.Allocator, day: u8, part: u8, input_lines: *std
     };
 }
 
-fn runPart(allocator: std.mem.Allocator, day_module: anytype, part: u8, input_lines: *std.mem.TokenIterator(u8, .sequence)) !u64 {
+fn runPart(allocator: std.mem.Allocator, day_module: anytype, part: u8, input: []u8) !u64 {
     return switch (part) {
-        1 => try day_module.part1(allocator, input_lines),
-        2 => try day_module.part2(allocator, input_lines),
+        1 => try day_module.part1(allocator, input),
+        2 => try day_module.part2(allocator, input),
         else => {
             std.debug.print("Invalid part number. Must be 1 or 2.\n", .{});
             return error.InvalidPart;

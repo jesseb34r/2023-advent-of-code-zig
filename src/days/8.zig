@@ -52,8 +52,9 @@ const MapTree = struct {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const directions = input_lines.next().?;
 
     var map_tree = MapTree.init(allocator);
@@ -103,8 +104,9 @@ pub fn part1(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const directions = input_lines.next().?;
     // _ = input_lines.next().?;
 

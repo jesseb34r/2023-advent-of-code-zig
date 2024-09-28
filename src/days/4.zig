@@ -157,8 +157,9 @@ const CardListIterator = struct {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
 
     while (input_lines.next()) |line| {
@@ -171,9 +172,10 @@ pub fn part1(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
-    var card_list_iter = try CardListIterator.parseCardList(allocator, input_lines);
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
+    var card_list_iter = try CardListIterator.parseCardList(allocator, &input_lines);
 
     return card_list_iter.process();
 }

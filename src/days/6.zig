@@ -38,8 +38,9 @@ const Race = struct {
 
 pub fn part1(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const race_times_str = input_lines.next().?;
     var race_times_itr = std.mem.tokenizeSequence(u8, race_times_str, " ");
     _ = race_times_itr.next();
@@ -68,8 +69,9 @@ pub fn part1(
 
 pub fn part2(
     allocator: std.mem.Allocator,
-    input_lines: *std.mem.TokenIterator(u8, .sequence),
+    input: []u8,
 ) !u64 {
+    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const race_time_part = std.mem.trimLeft(u8, input_lines.next().?, "Time:");
     const race_time_str = try std.mem.replaceOwned(u8, allocator, race_time_part, " ", "");
     const race_time = try std.fmt.parseInt(u64, race_time_str, 10);
