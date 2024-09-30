@@ -30,7 +30,7 @@ pub fn testPart(
     input: []const u8,
     part_fn: fn (
         allocator: std.mem.Allocator,
-        input_lines: *std.mem.TokenIterator(u8, .sequence),
+        input: []u8,
     ) anyerror!u64,
     expected_result: u64,
 ) !void {
@@ -38,8 +38,7 @@ pub fn testPart(
     defer arena_file.deinit();
     const arena = arena_file.allocator();
 
-    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    const result = try part_fn(arena, &input_lines);
+    const result = try part_fn(arena, input);
     try std.testing.expectEqual(expected_result, result);
 }
 
