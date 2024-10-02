@@ -44,110 +44,60 @@ const Contraption = struct {
             try visited.put(key, {});
 
             self.grid[current_pos.row][current_pos.col].energized = true;
+            const current_tile = self.grid[current_pos.row][current_pos.col].tile;
 
-            std.debug.print("Current position: ({d}, {d}) '{c}' {}=> ", .{
-                current_pos.col,
-                current_pos.row,
-                self.grid[current_pos.row][current_pos.col].tile,
-                self.grid[current_pos.row][current_pos.col].energized,
-            });
+            // branch
+            if (current_tile == '-' and
+                (current_dir == Direction.north or current_dir == Direction.south))
+            {
+                try self.energize(current_pos, Direction.west, visited);
+                try self.energize(current_pos, Direction.east, visited);
+                break;
+            }
 
+            if (current_tile == '|' and
+                (current_dir == Direction.east or current_dir == Direction.west))
+            {
+                try self.energize(current_pos, Direction.north, visited);
+                try self.energize(current_pos, Direction.south, visited);
+                break;
+            }
+
+            // update dir
+            if (current_tile == '/') {
+                current_dir = switch (current_dir) {
+                    .north => Direction.east,
+                    .east => Direction.north,
+                    .south => Direction.west,
+                    .west => Direction.south,
+                };
+            }
+
+            if (current_tile == '\\') {
+                current_dir = switch (current_dir) {
+                    .north => Direction.west,
+                    .west => Direction.north,
+                    .south => Direction.east,
+                    .east => Direction.south,
+                };
+            }
+
+            // update pos
             switch (current_dir) {
                 .north => {
-                    std.debug.print("Current direction: North\n", .{});
-                    if (current_pos.row == 0) break else current_pos.row -= 1;
-
-                    switch (self.grid[current_pos.row][current_pos.col].tile) {
-                        '/' => current_dir = Direction.east,
-                        '\\' => current_dir = Direction.west,
-                        '.', '|' => {},
-                        '-' => {
-                            std.debug.print("\nbranching\n", .{});
-                            // left branch
-                            if (current_pos.col != 0) {
-                                try self.energize(current_pos, Direction.west, visited);
-                            }
-                            // right branch
-                            if (current_pos.col != self.grid[0].len - 1) {
-                                try self.energize(current_pos, Direction.east, visited);
-                            }
-                        },
-                        else => return error.InvalidCharacter,
-                    }
+                    if (current_pos.row > 0) current_pos.row -= 1 else break;
                 },
                 .south => {
-                    std.debug.print("Current direction: South\n", .{});
-                    if (current_pos.row >= self.grid.len - 1) break else current_pos.row += 1;
-
-                    switch (self.grid[current_pos.row][current_pos.col].tile) {
-                        '/' => current_dir = Direction.west,
-                        '\\' => current_dir = Direction.east,
-                        '.', '|' => {},
-                        '-' => {
-                            std.debug.print("\nbranching\n", .{});
-                            // left branch
-                            if (current_pos.col != 0) {
-                                try self.energize(current_pos, Direction.west, visited);
-                            }
-                            // right branch
-                            if (current_pos.col != self.grid[0].len - 1) {
-                                try self.energize(current_pos, Direction.east, visited);
-                            }
-                        },
-                        else => return error.InvalidCharacter,
-                    }
+                    if (current_pos.row < self.grid.len - 1) current_pos.row += 1 else break;
                 },
                 .east => {
-                    std.debug.print("Current direction: East\n", .{});
-                    if (current_pos.col >= self.grid[0].len - 1) break else current_pos.col += 1;
-
-                    switch (self.grid[current_pos.row][current_pos.col].tile) {
-                        '/' => current_dir = Direction.north,
-                        '\\' => current_dir = Direction.south,
-                        '.', '-' => {},
-                        '|' => {
-                            std.debug.print("\nbranching\n", .{});
-                            // north branch
-                            if (current_pos.row != 0) {
-                                try self.energize(current_pos, Direction.north, visited);
-                            }
-                            // south branch
-                            if (current_pos.row < self.grid[0].len - 1) {
-                                try self.energize(current_pos, Direction.south, visited);
-                            }
-                        },
-                        else => return error.InvalidCharacter,
-                    }
+                    if (current_pos.col < self.grid[0].len - 1) current_pos.col += 1 else break;
                 },
                 .west => {
-                    std.debug.print("Current direction: West\n", .{});
-                    if (current_pos.col == 0) break else current_pos.col -= 1;
-
-                    switch (self.grid[current_pos.row][current_pos.col].tile) {
-                        '/' => current_dir = Direction.south,
-                        '\\' => current_dir = Direction.north,
-                        '.', '-' => {},
-                        '|' => {
-                            std.debug.print("\nbranching\n", .{});
-                            // north branch
-                            if (current_pos.row != 0) {
-                                try self.energize(current_pos, Direction.north, visited);
-                            }
-                            // south branch
-                            if (current_pos.row < self.grid[0].len - 1) {
-                                try self.energize(current_pos, Direction.south, visited);
-                            }
-                        },
-                        else => return error.InvalidCharacter,
-                    }
+                    if (current_pos.col > 0) current_pos.col -= 1 else break;
                 },
             }
         }
-        std.debug.print("## ending at pos ({d}, {d}) {any} ##\n\n", .{
-            current_pos.col,
-            current_pos.row,
-            current_dir,
-        });
     }
 
     pub fn calculateNumEnergizedTiles(self: *Self) !u64 {
@@ -155,8 +105,6 @@ const Contraption = struct {
             Vector,
             void,
         ).init(self.allocator);
-
-        std.debug.print("Energized Tiles:\n", .{});
 
         try self.energize(
             Position{ .col = 0, .row = 0 },
@@ -167,14 +115,8 @@ const Contraption = struct {
         var sum: u64 = 0;
         for (self.grid) |row| {
             for (row) |tile| {
-                if (tile.energized) {
-                    std.debug.print("#", .{});
-                    sum += 1;
-                } else {
-                    std.debug.print(".", .{});
-                }
+                if (tile.energized) sum += 1;
             }
-            std.debug.print("\n", .{});
         }
         return sum;
     }
@@ -185,7 +127,6 @@ pub fn part1(
     input: []u8,
 ) !u64 {
     var contraption = try Contraption.init(allocator, input);
-    std.debug.print("Input:\n{s}\n", .{input});
     return try contraption.calculateNumEnergizedTiles();
 }
 
