@@ -13,7 +13,7 @@ pub fn main() !void {
 
     const output = try day_modules.runDay(arena, args.day, args.part, input);
 
-    std.debug.print("Output: {d}", .{output});
+    std.debug.print("{d}\n", .{output});
 }
 
 test {
