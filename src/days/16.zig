@@ -7,31 +7,26 @@ const Direction = enum { north, south, east, west };
 
 const Vector = struct { pos: Position, dir: Direction };
 
+const Tile = struct { tile: u8, energized: bool = false };
+
 const Contraption = struct {
-    grid: [][]u8,
+    grid: [][]Tile,
     allocator: std.mem.Allocator,
 
     const Self = @This();
 
     pub fn init(allocator: std.mem.Allocator, input: []u8) !Self {
-        var grid_builder = std.ArrayList([]u8).init(allocator);
+        var grid_builder = std.ArrayList([]Tile).init(allocator);
         var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
         while (input_lines.next()) |line| {
-            const mutable = try allocator.alloc(u8, line.len);
-            std.mem.copyForwards(u8, mutable, line);
-            try grid_builder.append(mutable);
+            var tile_row = try allocator.alloc(Tile, line.len);
+            for (line, 0..) |char, i| {
+                tile_row[i] = Tile{ .tile = char };
+            }
+            try grid_builder.append(tile_row);
         }
 
         return Self{ .grid = try grid_builder.toOwnedSlice(), .allocator = allocator };
-    }
-
-    fn mergeEnergizedTiles(self: *const Self, source: [][]const u8, destination: [][]u8) void {
-        _ = self;
-        for (source, destination) |src_row, dst_row| {
-            for (src_row, dst_row) |src, *dst| {
-                dst.* |= src;
-            }
-        }
     }
 
     fn energize(
@@ -39,29 +34,22 @@ const Contraption = struct {
         start_pos: Position,
         direction: Direction,
         visited: *std.AutoHashMap(Vector, void),
-    ) ![][]u8 {
+    ) !void {
         var current_pos = start_pos;
         var current_dir = direction;
-
-        var energized_tiles = try self.allocator.alloc([]u8, self.grid.len);
-        errdefer self.allocator.free(energized_tiles);
-        for (0..energized_tiles.len) |i| {
-            energized_tiles[i] = try self.allocator.alloc(u8, self.grid[i].len);
-            errdefer self.allocator.free(energized_tiles[i]);
-            @memset(energized_tiles[i], 0);
-        }
 
         while (true) {
             const key = Vector{ .pos = current_pos, .dir = current_dir };
             if (visited.contains(key)) break;
             try visited.put(key, {});
 
-            energized_tiles[current_pos.row][current_pos.col] = 1;
+            self.grid[current_pos.row][current_pos.col].energized = true;
 
-            std.debug.print("Current position: ({d}, {d}) '{c}' => ", .{
+            std.debug.print("Current position: ({d}, {d}) '{c}' {}=> ", .{
                 current_pos.col,
                 current_pos.row,
-                self.grid[current_pos.row][current_pos.col],
+                self.grid[current_pos.row][current_pos.col].tile,
+                self.grid[current_pos.row][current_pos.col].energized,
             });
 
             switch (current_dir) {
@@ -69,7 +57,7 @@ const Contraption = struct {
                     std.debug.print("Current direction: North\n", .{});
                     if (current_pos.row == 0) break else current_pos.row -= 1;
 
-                    switch (self.grid[current_pos.row][current_pos.col]) {
+                    switch (self.grid[current_pos.row][current_pos.col].tile) {
                         '/' => current_dir = Direction.east,
                         '\\' => current_dir = Direction.west,
                         '.', '|' => {},
@@ -77,17 +65,11 @@ const Contraption = struct {
                             std.debug.print("\nbranching\n", .{});
                             // left branch
                             if (current_pos.col != 0) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.west, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.west, visited);
                             }
                             // right branch
                             if (current_pos.col != self.grid[0].len - 1) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.east, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.east, visited);
                             }
                         },
                         else => return error.InvalidCharacter,
@@ -97,7 +79,7 @@ const Contraption = struct {
                     std.debug.print("Current direction: South\n", .{});
                     if (current_pos.row >= self.grid.len - 1) break else current_pos.row += 1;
 
-                    switch (self.grid[current_pos.row][current_pos.col]) {
+                    switch (self.grid[current_pos.row][current_pos.col].tile) {
                         '/' => current_dir = Direction.west,
                         '\\' => current_dir = Direction.east,
                         '.', '|' => {},
@@ -105,17 +87,11 @@ const Contraption = struct {
                             std.debug.print("\nbranching\n", .{});
                             // left branch
                             if (current_pos.col != 0) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.west, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.west, visited);
                             }
                             // right branch
                             if (current_pos.col != self.grid[0].len - 1) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.east, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.east, visited);
                             }
                         },
                         else => return error.InvalidCharacter,
@@ -125,7 +101,7 @@ const Contraption = struct {
                     std.debug.print("Current direction: East\n", .{});
                     if (current_pos.col >= self.grid[0].len - 1) break else current_pos.col += 1;
 
-                    switch (self.grid[current_pos.row][current_pos.col]) {
+                    switch (self.grid[current_pos.row][current_pos.col].tile) {
                         '/' => current_dir = Direction.north,
                         '\\' => current_dir = Direction.south,
                         '.', '-' => {},
@@ -133,17 +109,11 @@ const Contraption = struct {
                             std.debug.print("\nbranching\n", .{});
                             // north branch
                             if (current_pos.row != 0) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.north, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.north, visited);
                             }
                             // south branch
                             if (current_pos.row < self.grid[0].len - 1) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.south, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.south, visited);
                             }
                         },
                         else => return error.InvalidCharacter,
@@ -153,7 +123,7 @@ const Contraption = struct {
                     std.debug.print("Current direction: West\n", .{});
                     if (current_pos.col == 0) break else current_pos.col -= 1;
 
-                    switch (self.grid[current_pos.row][current_pos.col]) {
+                    switch (self.grid[current_pos.row][current_pos.col].tile) {
                         '/' => current_dir = Direction.south,
                         '\\' => current_dir = Direction.north,
                         '.', '-' => {},
@@ -161,17 +131,11 @@ const Contraption = struct {
                             std.debug.print("\nbranching\n", .{});
                             // north branch
                             if (current_pos.row != 0) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.north, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.north, visited);
                             }
                             // south branch
                             if (current_pos.row < self.grid[0].len - 1) {
-                                self.mergeEnergizedTiles(
-                                    try self.energize(current_pos, Direction.south, visited),
-                                    energized_tiles,
-                                );
+                                try self.energize(current_pos, Direction.south, visited);
                             }
                         },
                         else => return error.InvalidCharacter,
@@ -184,7 +148,6 @@ const Contraption = struct {
             current_pos.row,
             current_dir,
         });
-        return energized_tiles;
     }
 
     pub fn calculateNumEnergizedTiles(self: *Self) !u64 {
@@ -195,20 +158,21 @@ const Contraption = struct {
 
         std.debug.print("Energized Tiles:\n", .{});
 
-        const energizedTiles = try self.energize(
+        try self.energize(
             Position{ .col = 0, .row = 0 },
             Direction.east,
             &visited,
         );
+
         var sum: u64 = 0;
-        for (energizedTiles) |row| {
+        for (self.grid) |row| {
             for (row) |tile| {
-                if (tile == 0) {
-                    std.debug.print(".", .{});
-                } else {
+                if (tile.energized) {
                     std.debug.print("#", .{});
+                    sum += 1;
+                } else {
+                    std.debug.print(".", .{});
                 }
-                sum += tile;
             }
             std.debug.print("\n", .{});
         }
