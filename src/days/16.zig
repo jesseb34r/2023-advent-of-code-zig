@@ -31,41 +31,50 @@ const Contraption = struct {
 
     fn energize(
         self: *const Self,
-        start_pos: Position,
-        direction: Direction,
+        vector: Vector,
         visited: *std.AutoHashMap(Vector, void),
     ) !void {
-        var current_pos = start_pos;
-        var current_dir = direction;
+        var current_vector = vector;
 
         while (true) {
-            const key = Vector{ .pos = current_pos, .dir = current_dir };
-            if (visited.contains(key)) break;
-            try visited.put(key, {});
+            if (visited.contains(current_vector)) break;
+            try visited.put(current_vector, {});
 
-            self.grid[current_pos.row][current_pos.col].energized = true;
-            const current_tile = self.grid[current_pos.row][current_pos.col].tile;
+            self.grid[current_vector.pos.row][current_vector.pos.col].energized = true;
+            const current_tile = self.grid[current_vector.pos.row][current_vector.pos.col].tile;
 
             // branch
             if (current_tile == '-' and
-                (current_dir == Direction.north or current_dir == Direction.south))
+                (current_vector.dir == Direction.north or current_vector.dir == Direction.south))
             {
-                try self.energize(current_pos, Direction.west, visited);
-                try self.energize(current_pos, Direction.east, visited);
+                try self.energize(
+                    Vector{ .pos = current_vector.pos, .dir = Direction.west },
+                    visited,
+                );
+                try self.energize(
+                    Vector{ .pos = current_vector.pos, .dir = Direction.east },
+                    visited,
+                );
                 break;
             }
 
             if (current_tile == '|' and
-                (current_dir == Direction.east or current_dir == Direction.west))
+                (current_vector.dir == Direction.east or current_vector.dir == Direction.west))
             {
-                try self.energize(current_pos, Direction.north, visited);
-                try self.energize(current_pos, Direction.south, visited);
+                try self.energize(
+                    Vector{ .pos = current_vector.pos, .dir = Direction.north },
+                    visited,
+                );
+                try self.energize(
+                    Vector{ .pos = current_vector.pos, .dir = Direction.south },
+                    visited,
+                );
                 break;
             }
 
             // update dir
             if (current_tile == '/') {
-                current_dir = switch (current_dir) {
+                current_vector.dir = switch (current_vector.dir) {
                     .north => Direction.east,
                     .east => Direction.north,
                     .south => Direction.west,
@@ -74,7 +83,7 @@ const Contraption = struct {
             }
 
             if (current_tile == '\\') {
-                current_dir = switch (current_dir) {
+                current_vector.dir = switch (current_vector.dir) {
                     .north => Direction.west,
                     .west => Direction.north,
                     .south => Direction.east,
@@ -83,41 +92,45 @@ const Contraption = struct {
             }
 
             // update pos
-            switch (current_dir) {
+            switch (current_vector.dir) {
                 .north => {
-                    if (current_pos.row > 0) current_pos.row -= 1 else break;
+                    if (current_vector.pos.row > 0) current_vector.pos.row -= 1 else break;
                 },
                 .south => {
-                    if (current_pos.row < self.grid.len - 1) current_pos.row += 1 else break;
+                    if (current_vector.pos.row < self.grid.len - 1) current_vector.pos.row += 1 else break;
                 },
                 .east => {
-                    if (current_pos.col < self.grid[0].len - 1) current_pos.col += 1 else break;
+                    if (current_vector.pos.col < self.grid[0].len - 1) current_vector.pos.col += 1 else break;
                 },
                 .west => {
-                    if (current_pos.col > 0) current_pos.col -= 1 else break;
+                    if (current_vector.pos.col > 0) current_vector.pos.col -= 1 else break;
                 },
             }
         }
     }
 
-    pub fn calculateNumEnergizedTiles(self: *Self) !u64 {
+    pub fn calculateNumEnergizedTiles(self: *Self, starting_vector: Vector) !u64 {
         var visited = std.AutoHashMap(
             Vector,
             void,
         ).init(self.allocator);
 
         try self.energize(
-            Position{ .col = 0, .row = 0 },
-            Direction.east,
+            starting_vector,
             &visited,
         );
 
         var sum: u64 = 0;
-        for (self.grid) |row| {
-            for (row) |tile| {
-                if (tile.energized) sum += 1;
+        for (0..self.grid.len) |i| {
+            for (0..self.grid[0].len) |j| {
+                if (self.grid[i][j].energized) {
+                    sum += 1;
+                    self.grid[i][j].energized = false;
+                }
             }
         }
+
+        // std.debug.print("{d} with starting vector {any}\n", .{ sum, starting_vector });
         return sum;
     }
 };
@@ -127,23 +140,58 @@ pub fn part1(
     input: []u8,
 ) !u64 {
     var contraption = try Contraption.init(allocator, input);
-    return try contraption.calculateNumEnergizedTiles();
+    return try contraption.calculateNumEnergizedTiles(Vector{
+        .pos = Position{ .col = 0, .row = 0 },
+        .dir = Direction.east,
+    });
 }
 
 pub fn part2(
     allocator: std.mem.Allocator,
     input: []u8,
 ) !u64 {
-    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    _ = allocator;
-    var sum: u64 = 0;
+    var contraption = try Contraption.init(allocator, input);
 
-    while (input_lines.next()) |line| {
-        _ = line;
+    var max_energized: u64 = 0;
+    for (0..contraption.grid.len) |i| {
+        max_energized = @max(
+            @max(
+                max_energized,
+                try contraption.calculateNumEnergizedTiles(Vector{
+                    .pos = Position{ .col = i, .row = 0 },
+                    .dir = Direction.south,
+                }),
+            ),
+            @max(
+                max_energized,
+                try contraption.calculateNumEnergizedTiles(Vector{
+                    .pos = Position{ .col = i, .row = contraption.grid.len - 1 },
+                    .dir = Direction.north,
+                }),
+            ),
+        );
     }
-    sum += 0;
 
-    return sum;
+    for (0..contraption.grid[0].len) |j| {
+        max_energized = @max(
+            @max(
+                max_energized,
+                try contraption.calculateNumEnergizedTiles(Vector{
+                    .pos = Position{ .col = 0, .row = j },
+                    .dir = Direction.west,
+                }),
+            ),
+            @max(
+                max_energized,
+                try contraption.calculateNumEnergizedTiles(Vector{
+                    .pos = Position{ .col = contraption.grid[0].len - 1, .row = j },
+                    .dir = Direction.east,
+                }),
+            ),
+        );
+    }
+
+    return max_energized;
 }
 
 test "part1" {
@@ -191,7 +239,7 @@ test "part2" {
     const mutable = try arena.alloc(u8, input.len);
     std.mem.copyForwards(u8, mutable, input);
 
-    const expected_result = 0;
+    const expected_result = 51;
     const result = try part2(arena, mutable);
     try std.testing.expectEqual(expected_result, result);
 }
