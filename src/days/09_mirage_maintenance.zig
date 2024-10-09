@@ -1,10 +1,6 @@
 const std = @import("std");
-const utils = @import("utils");
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: i64 = 0;
 
@@ -59,10 +55,7 @@ pub fn part1(
     return @abs(sum);
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: i64 = 0;
 
@@ -118,21 +111,35 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\0 3 6 9 12 15
         \\1 3 6 10 15 21
         \\10 13 16 21 30 45
     ;
+
     const expected_result = 114;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\0 3 6 9 12 15
         \\1 3 6 10 15 21
         \\10 13 16 21 30 45
     ;
+
     const expected_result = 2;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

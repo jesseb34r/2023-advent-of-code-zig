@@ -1,10 +1,6 @@
 const std = @import("std");
-const utils = @import("utils");
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     _ = allocator;
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
@@ -33,10 +29,7 @@ pub fn part1(
     return sum;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     _ = allocator;
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
@@ -97,18 +90,29 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\1abc2
         \\pqr3stu8vwx
         \\a1b2c3d4e5f
         \\treb7uchet
     ;
 
-    try utils.testPart(input, part1, 142);
+    const expected_result = 142;
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\two1nine
         \\eightwothree
         \\abcone2threexyz
@@ -118,5 +122,8 @@ test "part2" {
         \\7pqrstsixteen
     ;
 
-    try utils.testPart(input, part2, 281);
+    const expected_result = 281;
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

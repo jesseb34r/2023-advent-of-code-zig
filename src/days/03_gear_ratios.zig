@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 const SYMBOLS = .{ '*', '/', '@', '&', '$', '=', '#', '-', '+', '%' };
 
@@ -177,37 +176,31 @@ const Schematic = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const schematic = try Schematic.parseSchematic(allocator, &input_lines);
     return schematic.getPartNumberSum();
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const schematic = try Schematic.parseSchematic(allocator, &input_lines);
     return schematic.getGearPowerSum();
 }
 
 test "parse schematic line" {
-    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena_file.deinit();
-    const arena = arena_file.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
     const input_line = "467..*114..";
 
-    var expected_numbers = std.ArrayList(NumberWithRange).init(arena);
+    var expected_numbers = std.ArrayList(NumberWithRange).init(allocator);
     defer expected_numbers.deinit();
     try expected_numbers.append(NumberWithRange{ .value = 467, .start_index = 0, .end_index = 2 });
     try expected_numbers.append(NumberWithRange{ .value = 114, .start_index = 6, .end_index = 8 });
 
-    var expected_symbols = std.ArrayList(SymbolWithRange).init(arena);
+    var expected_symbols = std.ArrayList(SymbolWithRange).init(allocator);
     defer expected_symbols.deinit();
     try expected_symbols.append(SymbolWithRange{ .symbol = '*', .index = 5 });
 
@@ -215,13 +208,17 @@ test "parse schematic line" {
         .numbers = try expected_numbers.toOwnedSlice(),
         .symbols = try expected_symbols.toOwnedSlice(),
     };
-    const parsed_line = try SchematicLine.parseLine(arena, input_line);
+    const parsed_line = try SchematicLine.parseLine(allocator, input_line);
 
     try std.testing.expect(parsed_line.eql(expected_line));
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\467..114..
         \\...*......
         \\..35..633.
@@ -233,12 +230,19 @@ test "part1" {
         \\...$.*....
         \\.664.598..
     ;
+
     const expected_result = 4361;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\467..114..
         \\...*......
         \\..35..633.
@@ -250,6 +254,9 @@ test "part2" {
         \\...$.*....
         \\.664.598..
     ;
+
     const expected_result = 467835;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

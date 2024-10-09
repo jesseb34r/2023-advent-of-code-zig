@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 const Point = struct {
     y: usize,
@@ -34,10 +33,7 @@ const Map = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var map = try Map.init(allocator, &input_lines);
     const galaxy_points = try map.getGalaxyPoints();
@@ -76,10 +72,7 @@ pub fn part1(
     return sum;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var map = try Map.init(allocator, &input_lines);
     const galaxy_points = try map.getGalaxyPoints();
@@ -119,7 +112,11 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\...#......
         \\.......#..
         \\#.........
@@ -131,6 +128,9 @@ test "part1" {
         \\.......#..
         \\#...#.....
     ;
+
     const expected_result = 374;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

@@ -1,5 +1,6 @@
 const std = @import("std");
-const utils = @import("utils");
+
+const file_input = @embedFile("./inputs/02.txt");
 
 const Set = struct {
     red: u32 = 0,
@@ -91,91 +92,86 @@ const Game = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    var sum: u64 = 0;
 
     const bag = Set{ .red = 12, .green = 13, .blue = 14 };
 
+    var sum: u64 = 0;
     while (input_lines.next()) |line| {
         const game = try Game.parseGame(allocator, line);
         if (game.isPossible(bag)) {
             sum += game.id;
         }
     }
-
     return sum;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    var sum: u64 = 0;
 
+    var sum: u64 = 0;
     while (input_lines.next()) |line| {
         const game = try Game.parseGame(allocator, line);
         sum += game.minimalBag().power();
     }
-
     return sum;
 }
 
 test "parse game" {
-    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena_file.deinit();
-    const arena = arena_file.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    const input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
+    const test_input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
 
-    var expected_sets = std.ArrayList(Set).init(arena);
+    const parsed_game = try Game.parseGame(allocator, test_input);
+
+    var expected_sets = std.ArrayList(Set).init(allocator);
+    defer expected_sets.deinit();
+
     try expected_sets.append(Set{ .red = 4, .green = 0, .blue = 3 });
     try expected_sets.append(Set{ .red = 1, .green = 2, .blue = 6 });
     try expected_sets.append(Set{ .red = 0, .green = 2, .blue = 0 });
-
     const expected_result = Game{
         .id = 1,
         .sets = try expected_sets.toOwnedSlice(),
     };
 
-    const parsed_game = try Game.parseGame(arena, input);
     try std.testing.expect(parsed_game.eql(expected_result));
 }
 
 test "possible game" {
-    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena_file.deinit();
-    const arena = arena_file.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    const game = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
-    const parsed_game = try Game.parseGame(arena, game);
+    const test_game_input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
+    const parsed_game = try Game.parseGame(allocator, test_game_input);
+
     const bag = Set{ .red = 4, .green = 2, .blue = 6 };
-
     try std.testing.expect(parsed_game.isPossible(bag));
 }
 
 test "impossible game" {
-    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena_file.deinit();
-    const arena = arena_file.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    const game = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
-    const parsed_game = try Game.parseGame(arena, game);
+    const test_game_input = "Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green";
+    const parsed_game = try Game.parseGame(allocator, test_game_input);
+
     const bag = Set{ .red = 0, .green = 0, .blue = 0 };
-
     try std.testing.expect(!parsed_game.isPossible(bag));
 }
 
 test "minimal bag" {
-    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena_file.deinit();
-    const arena = arena_file.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    var sets = std.ArrayList(Set).init(arena);
+    var sets = std.ArrayList(Set).init(allocator);
+
     try sets.append(Set{ .red = 4, .green = 0, .blue = 3 });
     try sets.append(Set{ .red = 1, .green = 2, .blue = 6 });
     try sets.append(Set{ .red = 0, .green = 2, .blue = 0 });
@@ -186,25 +182,39 @@ test "minimal bag" {
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
         \\Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
         \\Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
         \\Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
         \\Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
     ;
+
     const expected_result = 8;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
         \\Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
         \\Game 3: 8 green, 6 blue, 20 red; 5 blue, 4 red, 13 green; 5 green, 1 red
         \\Game 4: 1 green, 3 red, 6 blue; 3 green, 6 red; 3 green, 15 blue, 14 red
         \\Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
     ;
+
     const expected_result = 2286;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

@@ -1,9 +1,6 @@
 const std = @import("std");
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     _ = allocator;
     var input_sequences = std.mem.tokenizeSequence(u8, input, ",");
 
@@ -109,10 +106,7 @@ const Map = struct {
     }
 };
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_sequences = std.mem.tokenizeSequence(u8, input, ",");
 
     var map = Map.init(allocator);
@@ -136,29 +130,25 @@ pub fn part2(
 }
 
 test "part1" {
-    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena_allocator = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_allocator.deinit();
     const arena = arena_allocator.allocator();
 
-    const input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
-    const mutable = try arena.alloc(u8, input.len);
-    std.mem.copyForwards(u8, mutable, input);
+    const test_input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
 
     const expected_result = 1320;
-    const result = try part1(arena, mutable);
+    const result = try part1(arena, test_input);
     try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena_allocator = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_allocator.deinit();
     const arena = arena_allocator.allocator();
 
-    const input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
-    const mutable = try arena.alloc(u8, input.len);
-    std.mem.copyForwards(u8, mutable, input);
+    const test_input = "rn=1,cm-,qp=3,cm=2,qp-,pc=4,ot=9,ab=5,pc-,pc=6,ot=7";
 
     const expected_result = 145;
-    const result = try part2(arena, mutable);
+    const result = try part2(arena, test_input);
     try std.testing.expectEqual(expected_result, result);
 }

@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 const Line = struct {
     line: []const u8,
@@ -148,10 +147,7 @@ const Pattern = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.splitSequence(u8, input, "\n");
     var sum: u64 = 0;
 
@@ -179,10 +175,7 @@ pub fn part1(
     return sum;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.splitSequence(u8, input, "\n");
     var sum: u64 = 0;
 
@@ -211,11 +204,11 @@ pub fn part2(
 }
 
 test "part1" {
-    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena_allocator = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_allocator.deinit();
     const arena = arena_allocator.allocator();
 
-    const input =
+    const test_input =
         \\#.##..##.
         \\..#.##.#.
         \\##......#
@@ -233,20 +226,18 @@ test "part1" {
         \\#....#..#
         \\
     ;
-    const mutable = try arena.alloc(u8, input.len);
-    std.mem.copyForwards(u8, mutable, input);
 
     const expected_result = 405;
-    const result = try part1(arena, mutable);
+    const result = try part1(arena, test_input);
     try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena_allocator = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_allocator.deinit();
     const arena = arena_allocator.allocator();
 
-    const input =
+    const test_input =
         \\#.##..##.
         \\..#.##.#.
         \\##......#
@@ -264,10 +255,8 @@ test "part2" {
         \\#....#..#
         \\
     ;
-    const mutable = try arena.alloc(u8, input.len);
-    std.mem.copyForwards(u8, mutable, input);
 
     const expected_result = 400;
-    const result = try part2(arena, mutable);
+    const result = try part2(arena, test_input);
     try std.testing.expectEqual(expected_result, result);
 }

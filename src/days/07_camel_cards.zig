@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 const Card = enum(u8) {
     Ace = 14,
@@ -200,10 +199,7 @@ const Hand = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var hand_set = std.ArrayList(Hand).init(allocator);
 
@@ -220,10 +216,7 @@ pub fn part1(
     return sum;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var hand_set = std.ArrayList(Hand).init(allocator);
 
@@ -242,25 +235,39 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\32T3K 765
         \\T55J5 684
         \\KK677 28
         \\KTJJT 220
         \\QQQJA 483
     ;
+
     const expected_result = 6440;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\32T3K 765
         \\T55J5 684
         \\KK677 28
         \\KTJJT 220
         \\QQQJA 483
     ;
+
     const expected_result = 5905;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 // point system is y then x
 // (0,0) is top left
@@ -155,19 +154,13 @@ fn calculateInteriorPoints(loop_points: []const Point) i64 {
     return area - @divTrunc(boundary_points, 2) + 1;
 }
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const map = try Map.init(allocator, &input_lines);
     return map.findFarthestDistance();
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var map = try Map.init(allocator, &input_lines);
     const loop_points = try map.findLoopPoints();
@@ -177,17 +170,23 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input_1 =
         \\.....
         \\.S-7.
         \\.|.|.
         \\.L-J.
         \\.....
     ;
-    const expected_result = 4;
-    try utils.testPart(input, part1, expected_result);
 
-    const input_2 =
+    const expected_result_1 = 4;
+    const result_1 = try part1(allocator, test_input_1);
+    try std.testing.expectEqual(expected_result_1, result_1);
+
+    const test_input_2 =
         \\..F7.
         \\.FJ|.
         \\SJ.L7
@@ -195,16 +194,19 @@ test "part1" {
         \\LJ...
     ;
     const expected_result_2 = 8;
-    try utils.testPart(input_2, part1, expected_result_2);
+    const result_2 = try part1(allocator, test_input_2);
+    try std.testing.expectEqual(expected_result_2, result_2);
 }
 
 // test "part2" {
-//     const input =
+//     const test_input =
 //         \\
 //         \\
 //         \\
 //         \\
 //     ;
 //     const expected_result = 0;
-//     try utils.testPart(input, part2, expected_result);
+//     const result = try part2(allocator, test_input);
+//
+//    try std.testing.expectEqual(expected_result, result);
 // }

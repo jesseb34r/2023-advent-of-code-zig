@@ -200,10 +200,7 @@ const Almanac = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const almanac = try Almanac.parse(allocator, input_lines.rest());
     defer almanac.deinit();
@@ -220,10 +217,7 @@ pub fn part1(
     return lowest_location;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var almanac = try Almanac.parse(allocator, input_lines.rest());
     defer almanac.deinit();
@@ -242,14 +236,14 @@ pub fn part2(
 }
 
 test "map range" {
-    var arena_file = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer arena_file.deinit();
-    const arena = arena_file.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
 
-    var map_ranges = std.ArrayList(MapRange).init(arena);
+    var map_ranges = std.ArrayList(MapRange).init(allocator);
     try map_ranges.append(MapRange{ .from_range_start = 10, .to_range_start = 100, .range_length = 10 });
     const map = Map{
-        .allocator = arena,
+        .allocator = allocator,
         .ranges = try map_ranges.toOwnedSlice(),
     };
 
@@ -297,18 +291,24 @@ test "map range" {
 }
 
 // test "part1" {
-//     const input =
+//     const test_input =
 //         \\
 //         \\
 //         \\
 //         \\
 //     ;
 //     const expected_result = 0;
-//     try utils.testPart(input, part1, expected_result);
+//     const result = try part2(allocator, test_input);
+//
+//    try std.testing.expectEqual(expected_result, result);
 // }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\seeds: 79 14 55 13
         \\
         \\seed-to-soil map:
@@ -343,6 +343,9 @@ test "part2" {
         \\60 56 37
         \\56 93 4
     ;
+
     const expected_result = 46;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

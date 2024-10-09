@@ -1,5 +1,15 @@
 const std = @import("std");
-const utils = @import("utils");
+
+fn lcm(a: u64, b: u64) u64 {
+    return (a * b) / gcd(a, b);
+}
+
+fn gcd(a: u64, b: u64) u64 {
+    if (b == 0) {
+        return a;
+    }
+    return gcd(b, a % b);
+}
 
 const MapNode = struct {
     code: [3]u8,
@@ -50,10 +60,7 @@ const MapTree = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const directions = input_lines.next().?;
 
@@ -102,10 +109,7 @@ pub fn part1(
     return path_length;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const directions = input_lines.next().?;
     // _ = input_lines.next().?;
@@ -157,15 +161,19 @@ pub fn part2(
         try path_lengths.append(path_length);
     }
 
-    var lcm: u64 = path_lengths.items[0];
+    var path_lcm: u64 = path_lengths.items[0];
     for (path_lengths.items[1..]) |length| {
-        lcm = utils.lcm(lcm, length);
+        path_lcm = lcm(path_lcm, length);
     }
-    return lcm;
+    return path_lcm;
 }
 
 test "part1" {
-    const input_1 =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input_1 =
         \\RL
         \\
         \\AAA = (BBB, CCC)
@@ -176,10 +184,12 @@ test "part1" {
         \\GGG = (GGG, GGG)
         \\ZZZ = (ZZZ, ZZZ)
     ;
-    const expected_result_1 = 2;
-    try utils.testPart(input_1, part1, expected_result_1);
 
-    const input_2 =
+    const expected_result_1 = 2;
+    const result_1 = try part1(allocator, test_input_1);
+    try std.testing.expectEqual(expected_result_1, result_1);
+
+    const test_input_2 =
         \\LLR
         \\
         \\AAA = (BBB, BBB)
@@ -187,11 +197,16 @@ test "part1" {
         \\ZZZ = (ZZZ, ZZZ)
     ;
     const expected_result_2 = 6;
-    try utils.testPart(input_2, part1, expected_result_2);
+    const result_2 = try part1(allocator, test_input_2);
+    try std.testing.expectEqual(expected_result_2, result_2);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\LR
         \\
         \\11A = (11B, XXX)
@@ -203,6 +218,9 @@ test "part2" {
         \\22Z = (22B, 22B)
         \\XXX = (XXX, XXX)
     ;
+
     const expected_result = 6;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

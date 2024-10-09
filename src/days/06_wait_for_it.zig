@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 fn quadraticFormula(a: f64, b: f64, c: f64) struct { x1: f64, x2: f64 } {
     const discriminant = b * b - 4 * a * c;
@@ -36,10 +35,7 @@ const Race = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const race_times_str = input_lines.next().?;
     var race_times_itr = std.mem.tokenizeSequence(u8, race_times_str, " ");
@@ -67,10 +63,7 @@ pub fn part1(
     return product;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     const race_time_part = std.mem.trimLeft(u8, input_lines.next().?, "Time:");
     const race_time_str = try std.mem.replaceOwned(u8, allocator, race_time_part, " ", "");
@@ -85,19 +78,33 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\Time:      7  15   30
         \\Distance:  9  40  200
     ;
+
     const expected_result = 288;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\Time:      7  15   30
         \\Distance:  9  40  200
     ;
+
     const expected_result = 71503;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

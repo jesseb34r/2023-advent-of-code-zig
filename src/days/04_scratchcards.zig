@@ -155,10 +155,7 @@ const CardListIterator = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
 
@@ -170,10 +167,7 @@ pub fn part1(
     return sum;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var card_list_iter = try CardListIterator.parseCardList(allocator, &input_lines);
 
@@ -181,7 +175,11 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
         \\Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
         \\Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
@@ -189,12 +187,19 @@ test "part1" {
         \\Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
         \\Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
     ;
+
     const expected_result = 13;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
         \\Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
         \\Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
@@ -202,6 +207,9 @@ test "part2" {
         \\Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
         \\Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
     ;
+
     const expected_result = 30;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+
+    try std.testing.expectEqual(expected_result, result);
 }

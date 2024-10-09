@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 const Map = struct {
     grid: [][]u8,
@@ -7,7 +6,7 @@ const Map = struct {
 
     const Self = @This();
 
-    pub fn init(allocator: std.mem.Allocator, input: []u8) !Self {
+    pub fn init(allocator: std.mem.Allocator, input: []const u8) !Self {
         var grid_builder = std.ArrayList([]u8).init(allocator);
         var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
         while (input_lines.next()) |line| {
@@ -22,10 +21,7 @@ const Map = struct {
     }
 };
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     const map = try Map.init(allocator, input);
 
     for (map.grid) |row| {
@@ -35,10 +31,7 @@ pub fn part1(
     return 0;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     _ = allocator;
     var sum: u64 = 0;
@@ -52,11 +45,11 @@ pub fn part2(
 }
 
 test "part1" {
-    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena_allocator = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_allocator.deinit();
     const arena = arena_allocator.allocator();
 
-    const input =
+    const test_input =
         \\2413432311323
         \\3215453535623
         \\3255245654254
@@ -71,20 +64,18 @@ test "part1" {
         \\2546548887735
         \\4322674655533
     ;
-    const mutable = try arena.alloc(u8, input.len);
-    std.mem.copyForwards(u8, mutable, input);
 
     const expected_result = 102;
-    const result = try part1(arena, mutable);
+    const result = try part1(arena, test_input);
     try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    var arena_allocator = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    var arena_allocator = std.heap.ArenaAllocator.init(std.testing.allocator);
     defer arena_allocator.deinit();
     const arena = arena_allocator.allocator();
 
-    const input =
+    const test_input =
         \\2413432311323
         \\3215453535623
         \\3255245654254
@@ -99,10 +90,8 @@ test "part2" {
         \\2546548887735
         \\4322674655533
     ;
-    const mutable = try arena.alloc(u8, input.len);
-    std.mem.copyForwards(u8, mutable, input);
 
     const expected_result = 0;
-    const result = try part2(arena, mutable);
+    const result = try part2(arena, test_input);
     try std.testing.expectEqual(expected_result, result);
 }

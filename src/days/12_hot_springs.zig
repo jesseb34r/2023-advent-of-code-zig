@@ -1,5 +1,4 @@
 const std = @import("std");
-const utils = @import("utils");
 
 fn parseKeys(allocator: std.mem.Allocator, key_str: []const u8) ![]usize {
     var iter = std.mem.splitScalar(u8, key_str, ',');
@@ -36,10 +35,7 @@ fn getNumValidCases(map: []const u8, keys: []usize) u64 {
     return cases;
 }
 
-pub fn part1(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
     while (input_lines.next()) |line| {
@@ -130,10 +126,7 @@ fn memoizedGetNumValidCases(
     return cases;
 }
 
-pub fn part2(
-    allocator: std.mem.Allocator,
-    input: []u8,
-) !u64 {
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
     var sum: u64 = 0;
 
@@ -169,7 +162,11 @@ pub fn part2(
 }
 
 test "part1" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\???.### 1,1,3
         \\.??..??...?##. 1,1,3
         \\?#?#?#?#?#?#?#? 1,3,1,6
@@ -177,12 +174,18 @@ test "part1" {
         \\????.######..#####. 1,6,5
         \\?###???????? 3,2,1
     ;
+
     const expected_result = 21;
-    try utils.testPart(input, part1, expected_result);
+    const result = try part1(allocator, test_input);
+    try std.testing.expectEqual(expected_result, result);
 }
 
 test "part2" {
-    const input =
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const allocator = arena.allocator();
+
+    const test_input =
         \\???.### 1,1,3
         \\.??..??...?##. 1,1,3
         \\?#?#?#?#?#?#?#? 1,3,1,6
@@ -190,6 +193,8 @@ test "part2" {
         \\????.######..#####. 1,6,5
         \\?###???????? 3,2,1
     ;
+
     const expected_result = 525152;
-    try utils.testPart(input, part2, expected_result);
+    const result = try part2(allocator, test_input);
+    try std.testing.expectEqual(expected_result, result);
 }
