@@ -91,9 +91,10 @@ const INPUTS = [_][]const u8{
 // TODO add a way to test and/or run all days
 /// To run a specific day run `cmd <day> <part>`
 pub fn main() !void {
-    var buffer: [1 << 20]u8 = undefined; // 1 MB buffer
-    var fba = std.heap.FixedBufferAllocator.init(&buffer);
-    var arena = std.heap.ArenaAllocator.init(fba.allocator());
+    // var buffer: [1 << 20]u8 = undefined; // 1 MB buffer
+    // var fba = std.heap.FixedBufferAllocator.init(&buffer);
+    // var arena = std.heap.ArenaAllocator.init(fba.allocator());
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
 
