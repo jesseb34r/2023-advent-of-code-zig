@@ -174,17 +174,113 @@ pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     return sum;
 }
 
-pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
-    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    _ = allocator;
-    var sum: u64 = 0;
+const Range = struct {
+    min: u64 = 1,
+    max: u64 = 4000,
 
-    while (input_lines.next()) |line| {
-        _ = line;
+    const Self = @This();
+
+    pub fn range(self: *const Self) u64 {
+        return self.max - self.min + 1;
     }
-    sum += 0;
+};
 
-    return sum;
+const Path = struct {
+    x: Range = Range{},
+    m: Range = Range{},
+    a: Range = Range{},
+    s: Range = Range{},
+
+    const Self = @This();
+
+    pub fn uniquePaths(self: *const Self) u64 {
+        return (self.x.range() * self.m.range() * self.a.range() * self.s.range());
+    }
+};
+
+fn findSuccessPaths(
+    workflows: *std.StringHashMap(Workflow),
+    current_path: Path,
+    destination: []const u8,
+) u64 {
+    if (std.mem.eql(u8, destination, "R")) return 0;
+    if (std.mem.eql(u8, destination, "A")) return current_path.uniquePaths();
+
+    var sum: u64 = 0;
+    const current_workflow = &workflows.get(destination).?;
+    var remaining_path = current_path;
+
+    for (current_workflow.rules) |rule| {
+        inline for (@typeInfo(PartRating).Enum.fields) |field| {
+            if (@field(PartRating, field.name) == rule.rating) {
+                const range = @field(remaining_path, field.name);
+
+                switch (rule.condition) {
+                    .lt => {
+                        if (range.max < rule.value) {
+                            return sum + findSuccessPaths(
+                                workflows,
+                                remaining_path,
+                                rule.destination,
+                            );
+                        } else if (range.min < rule.value) {
+                            var narrowed_path = remaining_path;
+                            @field(narrowed_path, field.name).max = rule.value - 1;
+                            sum += findSuccessPaths(
+                                workflows,
+                                narrowed_path,
+                                rule.destination,
+                            );
+                            @field(remaining_path, field.name).min = rule.value;
+                        }
+                    },
+                    .gt => {
+                        if (range.min > rule.value) {
+                            return sum + findSuccessPaths(
+                                workflows,
+                                remaining_path,
+                                rule.destination,
+                            );
+                        } else if (range.max > rule.value) {
+                            var narrowed_path = remaining_path;
+                            @field(narrowed_path, field.name).min = rule.value + 1;
+                            sum += findSuccessPaths(
+                                workflows,
+                                narrowed_path,
+                                rule.destination,
+                            );
+                            @field(remaining_path, field.name).max = rule.value;
+                        }
+                    },
+                }
+            }
+        }
+    }
+
+    return sum + findSuccessPaths(
+        workflows,
+        remaining_path,
+        current_workflow.destination,
+    );
+}
+
+pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
+    var input_sections = std.mem.splitSequence(u8, input, "\n\n");
+    const workflows_section = input_sections.next().?;
+
+    var workflows_arr = std.mem.tokenizeSequence(u8, workflows_section, "\n");
+    var workflows = std.StringHashMap(Workflow).init(allocator);
+
+    while (workflows_arr.next()) |workflow_str| {
+        const workflow = try Workflow.parse(allocator, workflow_str);
+        try workflows.put(workflow.name, workflow);
+    }
+
+    return findSuccessPaths(
+        &workflows,
+        Path{},
+        "in",
+    );
 }
 
 test "part1" {
@@ -243,7 +339,7 @@ test "part2" {
         \\{x=2127,m=1623,a=2188,s=1013}
     ;
 
-    const expected_result = 0;
+    const expected_result = 167409079868000;
     const result = try part2(allocator, test_input);
 
     try std.testing.expectEqual(expected_result, result);
