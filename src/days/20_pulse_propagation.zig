@@ -4,88 +4,22 @@ const utils = @import("utils");
 const PulseType = enum { high, low };
 
 const Pulse = struct {
-    from: u16,
-    targets: []u16,
+    from: []const u8,
+    to: []const u8,
     pulse_type: PulseType,
 };
 
 const OnOff = enum { on, off };
 
-const FlipFlopModule = struct {
-    id: u16,
-    targets: []u16,
-    state: OnOff,
+const ModuleType = enum { flipflop, conjunction };
 
-    const Self = @This();
-
-    pub fn init(id: u16, targets: []u16) Self {
-        return Self{ .id = id, .targets = targets, .state = .off };
-    }
-
-    pub fn pulse(
-        self: *Self,
-        pulse_type: PulseType,
-    ) ?Pulse {
-        if (pulse_type == .high) return null;
-
-        self.toggle();
-
-        return Pulse{
-            .from = self.id,
-            .targets = self.targets,
-            .pulse_type = if (self.state == .on) .high else .low,
-        };
-    }
-
-    fn toggle(self: *Self) void {
-        self.state = if (self.state == .on) .off else .on;
-    }
-};
-
-const ConjunctionModule = struct {
-    id: u16,
-    targets: []u16,
-    state: std.AutoArrayHashMap(u16, PulseType),
-
-    const Self = @This();
-
-    pub fn init(allocator: std.mem.Allocator, id: u16, targets: []u16) Self {
-        const state = std.AutoArrayHashMap(u16, PulseType).init(allocator);
-        return Self{ .id = id, .targets = targets, .state = state };
-    }
-
-    pub fn pulse(
-        self: *Self,
-        from: u16,
-        pulse_type: PulseType,
-    ) !Pulse {
-        try self.state.put(from, pulse_type);
-
-        var state_it = self.state.iterator();
-        var all_high = true;
-        while (state_it.next()) |module| {
-            if (module.value_ptr.* == .low) {
-                all_high = false;
-                break;
-            }
-        }
-
-        return Pulse{
-            .from = self.id,
-            .targets = self.targets,
-            .pulse_type = if (all_high) .low else .high,
-        };
-    }
-};
-
-const ModuleType = enum {
-    flipflop,
-    conjunction,
-};
-
-const Module = union(ModuleType) {
-    flipflop: FlipFlopModule,
-    conjunction: ConjunctionModule,
+const Module = struct {
+    allocator: std.mem.Allocator,
+    name: []const u8,
+    kind: ModuleType,
+    targets: std.ArrayList([]const u8),
+    state: ?OnOff = null,
+    memory: ?std.StringArrayHashMap(PulseType) = null,
 
     const Self = @This();
 
@@ -98,31 +32,79 @@ const Module = union(ModuleType) {
 
         var parts = std.mem.splitSequence(u8, input, " -> ");
 
-        const id = sliceToId(parts.next().?[1..]);
+        const name = parts.next().?[1..];
 
         const targets_part = parts.next().?;
         var targets_it = std.mem.splitSequence(u8, targets_part, ", ");
-        var targets_builder = std.ArrayList(u16).init(allocator);
+        var targets = std.ArrayList([]const u8).init(allocator);
         while (targets_it.next()) |target| {
-            try targets_builder.append(sliceToId(target));
+            try targets.append(target);
         }
-        const target_modules = try targets_builder.toOwnedSlice();
 
         return switch (module_type) {
             .flipflop => Module{
-                .flipflop = FlipFlopModule.init(id, target_modules),
+                .allocator = allocator,
+                .name = name,
+                .kind = module_type,
+                .targets = targets,
+                .state = .off,
             },
             .conjunction => Module{
-                .conjunction = ConjunctionModule.init(allocator, id, target_modules),
+                .allocator = allocator,
+                .name = name,
+                .kind = module_type,
+                .targets = targets,
+                .memory = std.StringArrayHashMap(PulseType).init(allocator),
             },
         };
     }
-};
 
-fn sliceToId(name: []const u8) u16 {
-    std.debug.assert(name.len == 2);
-    return @as(u16, name[0]) << 8 | name[1];
-}
+    pub fn processPulse(self: *Self, pulse: Pulse) !?std.ArrayList(Pulse) {
+        var pulses = std.ArrayList(Pulse).init(self.allocator);
+        switch (self.kind) {
+            .flipflop => {
+                std.debug.assert(self.state != null and self.memory == null);
+
+                if (pulse.pulse_type == .high) return null;
+
+                self.state.? = if (self.state.? == .on) .off else .on;
+
+                for (self.targets.items) |target_name| {
+                    try pulses.append(Pulse{
+                        .from = self.name,
+                        .to = target_name,
+                        .pulse_type = if (self.state.? == .on) .high else .low,
+                    });
+                }
+            },
+            .conjunction => {
+                std.debug.assert(self.state == null and self.memory != null);
+
+                // update memory
+                try self.memory.?.put(pulse.from, pulse.pulse_type);
+
+                // check if all input modules most recent pulse was high
+                var all_high = true;
+                var memory_it = self.memory.?.iterator();
+                while (memory_it.next()) |mod| {
+                    if (mod.value_ptr.* == .low) {
+                        all_high = false;
+                        break;
+                    }
+                }
+
+                for (self.targets.items) |target_name| {
+                    try pulses.append(Pulse{
+                        .from = self.name,
+                        .to = target_name,
+                        .pulse_type = if (all_high) .low else .high,
+                    });
+                }
+            },
+        }
+        return pulses;
+    }
+};
 
 const PulseCount = struct {
     high: u64,
@@ -131,61 +113,75 @@ const PulseCount = struct {
 
 const Graph = struct {
     allocator: std.mem.Allocator,
-    modules: std.AutoArrayHashMap(u16, Module),
-    broadcast_targets: []u16 = undefined,
+    modules: std.StringArrayHashMap(Module),
+    broadcast_targets: std.ArrayList([]const u8),
+    cycle_end: bool = false,
 
     const Self = @This();
 
     pub fn parseAndInit(allocator: std.mem.Allocator, input: []const u8) !Self {
+        // initialize graph
+        var graph = Self{
+            .allocator = allocator,
+            .modules = std.StringArrayHashMap(Module).init(allocator),
+            .broadcast_targets = std.ArrayList([]const u8).init(allocator),
+        };
+
+        // parse input
         var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
 
-        var graph = Self.init(allocator);
-
         while (input_lines.next()) |line| {
+            // broadcaster line is always formatted "broadcaster -> <targets>"
             if (line[0] == 'b') {
-                try graph.parseBroadcasterTargets(line);
+                var targets_it = std.mem.splitSequence(u8, line[15..], ", ");
+                while (targets_it.next()) |target_name| {
+                    try graph.broadcast_targets.append(target_name);
+                }
                 continue;
             }
 
-            try graph.addModule(try Module.parse(allocator, line));
+            const module = try Module.parse(allocator, line);
+            try graph.modules.put(module.name, module);
         }
 
-        try graph.initConjunctionModuleState();
+        // initialize conjunction module inputs
+        try graph.initConjunctionModuleMemory();
 
         return graph;
     }
 
-    pub fn broadcast(self: *Self) !PulseCount {
+    pub fn pressButton(self: *Self) !PulseCount {
         var low_count: u64 = 1; // start at 1 to include the pulse from the button
         var high_count: u64 = 0;
         var pulse_queue = std.ArrayList(Pulse).init(self.allocator);
 
-        // low_count += self.broadcast_targets.len;
-        try pulse_queue.append(Pulse{
-            .from = @as(u16, 0),
-            .targets = self.broadcast_targets,
-            .pulse_type = .low,
-        });
+        // add broadcast pulses to the queue
+        for (self.broadcast_targets.items) |target_name| {
+            low_count += 1;
+            try pulse_queue.append(Pulse{
+                .from = "broadcaster",
+                .to = target_name,
+                .pulse_type = .low,
+            });
+        }
 
+        // process queue until empty
         while (pulse_queue.items.len > 0) {
             const pulse = pulse_queue.orderedRemove(0);
-            switch (pulse.pulse_type) {
-                .high => high_count += pulse.targets.len,
-                .low => low_count += pulse.targets.len,
+
+            // for checking cycle length in part 2
+            if (pulse.pulse_type == .high and std.mem.eql(u8, pulse.to, "dt")) {
+                self.cycle_end = true;
             }
 
-            for (pulse.targets) |target_id| {
-                if (self.modules.getPtr(target_id)) |module| {
-                    switch (module.*) {
-                        .flipflop => |*f| {
-                            if (f.pulse(pulse.pulse_type)) |new_pulse| {
-                                try pulse_queue.append(new_pulse);
-                            }
-                        },
-                        .conjunction => |*c| {
-                            const new_pulse = try c.pulse(pulse.from, pulse.pulse_type);
-                            try pulse_queue.append(new_pulse);
-                        },
+            if (self.modules.getPtr(pulse.to)) |module| {
+                if (try module.processPulse(pulse)) |new_pulses| {
+                    for (new_pulses.items) |new_pulse| {
+                        switch (new_pulse.pulse_type) {
+                            .high => high_count += 1,
+                            .low => low_count += 1,
+                        }
+                        try pulse_queue.append(new_pulse);
                     }
                 }
             }
@@ -194,67 +190,36 @@ const Graph = struct {
         return PulseCount{ .high = high_count, .low = low_count };
     }
 
-    fn init(allocator: std.mem.Allocator) Self {
-        const modules = std.AutoArrayHashMap(u16, Module).init(allocator);
-        return Self{ .allocator = allocator, .modules = modules };
-    }
-
-    fn addModule(self: *Self, module: Module) !void {
-        const id = switch (module) {
-            .flipflop => |f| f.id,
-            .conjunction => |c| c.id,
-        };
-
-        try self.modules.put(id, module);
-    }
-
-    fn parseBroadcasterTargets(self: *Self, line: []const u8) !void {
-        // broadcaster line is always formatted "broadcaster -> <targets>"
-        var broadcast_targets_it = std.mem.splitSequence(u8, line[15..], ", ");
-        var broadcast_targets_builder = std.ArrayList(u16).init(self.allocator);
-        while (broadcast_targets_it.next()) |target| {
-            try broadcast_targets_builder.append(sliceToId(target));
-        }
-        self.broadcast_targets = try broadcast_targets_builder.toOwnedSlice();
-    }
-
-    fn initConjunctionModuleState(self: *Self) !void {
-        // check broadcast_targets
-        const broadcast_id: u16 = 0;
-        for (self.broadcast_targets) |target_id| {
-            switch (self.modules.getPtr(target_id).?.*) {
-                .flipflop => {},
-                .conjunction => |*c| {
-                    try c.state.put(broadcast_id, .low);
-                },
-            }
-        }
+    fn initConjunctionModuleMemory(self: *Self) !void {
+        // broadcast targets are all flipflop so ignore
 
         // check rest of modules
         var module_it = self.modules.iterator();
-        while (module_it.next()) |mod| {
-            const id = switch (mod.value_ptr.*) {
-                .flipflop => |f| f.id,
-                .conjunction => |c| c.id,
-            };
-            const targets = switch (mod.value_ptr.*) {
-                .flipflop => |f| f.targets,
-                .conjunction => |c| c.targets,
-            };
-
-            for (targets) |target_id| {
-                const mod_ptr = self.modules.getPtr(target_id);
-                if (mod_ptr == null) continue; // ignore targets that don't exist
-
-                switch (mod_ptr.?.*) {
-                    .flipflop => {},
-                    .conjunction => |*c| {
-                        try c.state.put(id, .low);
-                    },
+        while (module_it.next()) |from_mod| {
+            for (from_mod.value_ptr.*.targets.items) |target_name| {
+                const target_ptr = self.modules.getPtr(target_name);
+                if (target_ptr) |t| {
+                    if (t.kind == .conjunction) try t.*.memory.?.put(from_mod.value_ptr.name, .low);
                 }
             }
         }
     }
+
+    // pub fn printConjunctionModules(self: *const Self) void {
+    //     var modules_it = self.modules.iterator();
+    //     while (modules_it.next()) |mod| {
+    //         switch (mod.value_ptr.*) {
+    //             .flipflop => {},
+    //             .conjunction => |c| {
+    //                 std.debug.print("Name: {s} inputs:\n", .{idToSlice(c.id)});
+    //                 for (c.state.keys()) |input_id| std.debug.print("{s} ", .{idToSlice(input_id)});
+    //                 std.debug.print("\ntargets:\n", .{});
+    //                 for (c.targets) |target_id| std.debug.print("{s} ", .{idToSlice(target_id)});
+    //                 std.debug.print("\n", .{});
+    //             },
+    //         }
+    //     }
+    // }
 };
 
 pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
@@ -266,7 +231,7 @@ pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     };
 
     for (0..1000) |_| {
-        const p = try graph.broadcast();
+        const p = try graph.pressButton();
         pulse_count.high += p.high;
         pulse_count.low += p.low;
     }
@@ -275,17 +240,37 @@ pub fn part1(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     return pulse_count.low * pulse_count.high;
 }
 
+fn gcd(a: u64, b: u64) u64 {
+    return if (b == 0) a else gcd(b, a % b);
+}
+
+fn lcm(a: u64, b: u64) u64 {
+    return (a * b) / gcd(a, b);
+}
+
 pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
-    var input_lines = std.mem.tokenizeSequence(u8, input, "\n");
-    _ = allocator;
-    var sum: u64 = 0;
+    var graph = try Graph.parseAndInit(allocator, input);
 
-    while (input_lines.next()) |line| {
-        _ = line;
+    const broadcast_targets = graph.broadcast_targets;
+    var cycle_lengths = [_]u64{0} ** 4;
+
+    for (broadcast_targets, 0..) |target_id, i| {
+        graph.broadcast_targets = @constCast(&[_]u16{target_id});
+        var button_presses: u64 = 0;
+        while (true) {
+            button_presses += 1;
+            if (graph.dt_hit) break;
+        }
+        cycle_lengths[i] = button_presses;
     }
-    sum += 0;
 
-    return sum;
+    // Calculate the LCM of cycle lengths
+    var cycle_lcm: u64 = cycle_lengths[0];
+    for (cycle_lengths[1..]) |length| {
+        cycle_lcm = lcm(cycle_lcm, length);
+    }
+
+    return cycle_lcm;
 }
 
 test "part1" {
