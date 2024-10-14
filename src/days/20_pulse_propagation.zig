@@ -83,11 +83,13 @@ const Module = struct {
                 // update memory
                 try self.memory.?.put(pulse.from, pulse.pulse_type);
 
+                // std.debug.print("processing pulse, checking if memory is all high\n", .{});
                 // check if all input modules most recent pulse was high
                 var all_high = true;
                 var memory_it = self.memory.?.iterator();
                 while (memory_it.next()) |mod| {
                     if (mod.value_ptr.* == .low) {
+                        // std.debug.print("found low pulse\n", .{});
                         all_high = false;
                         break;
                     }
@@ -115,7 +117,6 @@ const Graph = struct {
     allocator: std.mem.Allocator,
     modules: std.StringArrayHashMap(Module),
     broadcast_targets: std.ArrayList([]const u8),
-    cycle_end: bool = false,
 
     const Self = @This();
 
@@ -145,7 +146,7 @@ const Graph = struct {
         }
 
         // initialize conjunction module inputs
-        try graph.initConjunctionModuleMemory();
+        try graph.initState();
 
         return graph;
     }
@@ -169,11 +170,6 @@ const Graph = struct {
         while (pulse_queue.items.len > 0) {
             const pulse = pulse_queue.orderedRemove(0);
 
-            // for checking cycle length in part 2
-            if (pulse.pulse_type == .high and std.mem.eql(u8, pulse.to, "dt")) {
-                self.cycle_end = true;
-            }
-
             if (self.modules.getPtr(pulse.to)) |module| {
                 if (try module.processPulse(pulse)) |new_pulses| {
                     for (new_pulses.items) |new_pulse| {
@@ -190,17 +186,134 @@ const Graph = struct {
         return PulseCount{ .high = high_count, .low = low_count };
     }
 
-    fn initConjunctionModuleMemory(self: *Self) !void {
-        // broadcast targets are all flipflop so ignore
+    /// make sure to set to initial state to get accurate counts
+    pub fn countCycleLength(self: *Self) !u64 {
+        // count number of pulses to the given input_node are needed to hit the output node
+        var cycle_count: u64 = 0;
+        var pulse_queue = std.ArrayList(Pulse).init(self.allocator);
 
-        // check rest of modules
+        while (true) : (pulse_queue.clearAndFree()) {
+            cycle_count += 1;
+
+            try pulse_queue.append(Pulse{
+                .from = "broadcaster",
+                .to = self.broadcast_targets.items[0],
+                .pulse_type = .low,
+            });
+
+            var cycle_end = false;
+
+            while (pulse_queue.items.len > 0) {
+                const pulse = pulse_queue.orderedRemove(0);
+
+                if (self.modules.get(pulse.to) == null and pulse.pulse_type == .low) {
+                    cycle_end = true;
+                }
+
+                if (self.modules.getPtr(pulse.to)) |module| {
+                    if (try module.processPulse(pulse)) |new_pulses| {
+                        for (new_pulses.items) |new_pulse| {
+                            try pulse_queue.append(new_pulse);
+                        }
+                    }
+                }
+            }
+
+            if (cycle_end) return cycle_count;
+        }
+        return 0;
+    }
+
+    pub fn constructSubGraph(self: *Self, starting_module: []const u8) !Self {
+        // initialize graph
+        var sub_graph = Self{
+            .allocator = self.allocator,
+            .modules = std.StringArrayHashMap(Module).init(self.allocator),
+            .broadcast_targets = std.ArrayList([]const u8).init(self.allocator),
+        };
+        try sub_graph.broadcast_targets.append(starting_module);
+
+        // clear current graph state before copying modules
+        self.clearState();
+
+        // construct graph from modules connected to starting_module
+        var mod_queue = std.ArrayList([]const u8).init(self.allocator);
+        try mod_queue.append(starting_module);
+
+        while (mod_queue.items.len > 0) {
+            const current_mod_name = mod_queue.orderedRemove(0);
+
+            if (self.modules.get(current_mod_name)) |current_mod| {
+                if (current_mod.kind == .flipflop) {
+                    try mod_queue.appendSlice(current_mod.targets.items);
+                }
+                try sub_graph.modules.put(current_mod_name, current_mod);
+            }
+        }
+
+        // initialize conjunction module inputs
+        try sub_graph.initState();
+
+        return sub_graph;
+    }
+
+    pub fn printGraphState(self: *const Self) !void {
+        var f_modules = std.StringArrayHashMap(void).init(self.allocator);
+        var c_modules = std.StringArrayHashMap(void).init(self.allocator);
+
+        // var mod_queue = std.ArrayList([]const u8).init(self.allocator);
+        // try mod_queue.appendSlice(self.broadcast_targets.items);
+
+        // while (mod_queue.items.len > 0) {
+        //     const current_mod_name = mod_queue.orderedRemove(0);
+
+        //     if (self.modules.get(current_mod_name)) |current_mod| {
+        //         switch (current_mod.kind) {
+        //             .flipflop => {
+        //                 try f_modules.put(current_mod.name, {});
+        //                 try mod_queue.appendSlice(current_mod.targets.items);
+        //             },
+        //             .conjunction => {
+        //                 try c_modules.put(current_mod.name, {});
+        //             },
+        //         }
+        //     }
+        // }
+
+        var mod_it = self.modules.iterator();
+        while (mod_it.next()) |mod| switch (mod.value_ptr.kind) {
+            .flipflop => try f_modules.put(mod.value_ptr.name, {}),
+            .conjunction => try c_modules.put(mod.value_ptr.name, {}),
+        };
+
+        std.debug.print("FlipFlop Modules: ", .{});
+        var f_mod_it = f_modules.iterator();
+        while (f_mod_it.next()) |f| std.debug.print("{s} ", .{f.key_ptr.*});
+        std.debug.print("\nConjunction Modules: ", .{});
+        var c_mod_it = c_modules.iterator();
+        while (c_mod_it.next()) |c| std.debug.print("{s} ", .{c.key_ptr.*});
+        std.debug.print("\n", .{});
+    }
+
+    fn initState(self: *Self) !void {
         var module_it = self.modules.iterator();
-        while (module_it.next()) |from_mod| {
-            for (from_mod.value_ptr.*.targets.items) |target_name| {
+        while (module_it.next()) |mod| {
+            if (mod.value_ptr.kind == .flipflop) mod.value_ptr.state = .off;
+            for (mod.value_ptr.targets.items) |target_name| {
                 const target_ptr = self.modules.getPtr(target_name);
                 if (target_ptr) |t| {
-                    if (t.kind == .conjunction) try t.*.memory.?.put(from_mod.value_ptr.name, .low);
+                    if (t.kind == .conjunction) try t.*.memory.?.put(mod.value_ptr.name, .low);
                 }
+            }
+        }
+    }
+
+    pub fn clearState(self: *Self) void {
+        var module_it = self.modules.iterator();
+        while (module_it.next()) |mod_entry| {
+            switch (mod_entry.value_ptr.kind) {
+                .flipflop => mod_entry.value_ptr.state = .off,
+                .conjunction => mod_entry.value_ptr.memory.?.clearAndFree(),
             }
         }
     }
@@ -251,22 +364,27 @@ fn lcm(a: u64, b: u64) u64 {
 pub fn part2(allocator: std.mem.Allocator, comptime input: []const u8) !u64 {
     var graph = try Graph.parseAndInit(allocator, input);
 
-    const broadcast_targets = graph.broadcast_targets;
-    var cycle_lengths = [_]u64{0} ** 4;
+    var cycle_lengths = std.ArrayList(u64).init(allocator);
 
-    for (broadcast_targets, 0..) |target_id, i| {
-        graph.broadcast_targets = @constCast(&[_]u16{target_id});
-        var button_presses: u64 = 0;
-        while (true) {
-            button_presses += 1;
-            if (graph.dt_hit) break;
-        }
-        cycle_lengths[i] = button_presses;
-    }
+    var sub_1 = try graph.constructSubGraph(graph.broadcast_targets.items[0]);
+    try sub_1.printGraphState();
+    try cycle_lengths.append(try sub_1.countCycleLength());
+
+    var sub_2 = try graph.constructSubGraph(graph.broadcast_targets.items[1]);
+    try sub_2.printGraphState();
+    try cycle_lengths.append(try sub_2.countCycleLength());
+
+    var sub_3 = try graph.constructSubGraph(graph.broadcast_targets.items[2]);
+    try sub_3.printGraphState();
+    try cycle_lengths.append(try sub_3.countCycleLength());
+
+    var sub_4 = try graph.constructSubGraph(graph.broadcast_targets.items[3]);
+    try sub_4.printGraphState();
+    try cycle_lengths.append(try sub_4.countCycleLength());
 
     // Calculate the LCM of cycle lengths
-    var cycle_lcm: u64 = cycle_lengths[0];
-    for (cycle_lengths[1..]) |length| {
+    var cycle_lcm: u64 = cycle_lengths.items[0];
+    for (cycle_lengths.items[1..]) |length| {
         cycle_lcm = lcm(cycle_lcm, length);
     }
 
